@@ -65,7 +65,10 @@ export function getRowValidator(setup:RowValidatorSetup){
             var revisar_saltos_especiales= false;
             var valor=formData[miVariable];
             const estructuraVar = estructura.variables[miVariable];
-            if(conOmitida){
+            if(estructuraVar.calculada){
+                apagada=true;
+                rta.estados[miVariable]='calculada';
+            }else if(conOmitida){
                 falla('fuera_de_flujo_por_omitida');
             }else if(enSaltoAVariable && miVariable!=enSaltoAVariable){
                 apagada=true;
@@ -104,10 +107,7 @@ export function getRowValidator(setup:RowValidatorSetup){
             }else{
                 // no estoy en una variable salteada y estoy dentro del flujo normal (no hubo omitidas hasta ahora). 
                 enSaltoAVariable=null; // si estaba en un salto acá se acaba
-                if(estructuraVar.calculada){
-                    apagada=true;
-                    rta.estados[miVariable]='calculada';
-                }else if(valor===null){
+                if(valor===null){
                     if(!rta.primeraVacia){
                         rta.primeraVacia=miVariable;
                     }
