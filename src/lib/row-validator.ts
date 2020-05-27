@@ -3,21 +3,21 @@
 export type Valor = string | number | boolean | null
 
 export interface Opcion<V>{
-    salto?:V
+    salto?:V|null
 }
 
 export interface Variable<V, FH>{
     optativa?:boolean
-    salto?:V
-    tipo:'opciones'|'numerico'|'texto'
-    opciones?:{[k:number]:Opcion<V>}
-    maximo?:number
-    minimo?:number
-    subordinadaVar?:V
-    subordinadaValor?:Valor
-    saltoNsNr?:V
-    calculada?:boolean
-    funcionHabilitar?:FH
+    salto?:V|null
+    tipo:'opciones'|'numerico'|'texto'|string
+    opciones?:{[k in string|number]:Opcion<V>}
+    maximo?:number|null
+    minimo?:number|null
+    subordinadaVar?:V|null
+    subordinadaValor?:Valor|null
+    saltoNsNr?:V|null
+    calculada?:boolean|null
+    funcionHabilitar?:FH|null
 }
 
 export interface Structure<V extends string, FH extends string = string>{

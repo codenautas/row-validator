@@ -1,9 +1,9 @@
 {
     "compilerOptions": {
         "outDir": "../../lib",
-        "module": "none",
-        "target": "es2017",
-        "lib":["es2017", "es2015"]
+        "module": "umd",
+        "target": "ES5",
+        "lib":["ES5"]
     },
     "include":[
         "."
