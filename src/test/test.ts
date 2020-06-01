@@ -415,6 +415,21 @@ describe('row-validator', function(){
                 }
             )
         })
+        it("nsnr -1 con salto", function(){
+            var row:DesordenRow = {v9:1, v1:'A', v2:-1, v3:null, v4:null, v11:null}
+            var state = rowValidator(la3OptativaStruct, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'incompleto',
+                    estados:{v9:'valida', v1:'valida', v2:'valida', v3:'salteada', v4:'salteada', v11:'actual'},
+                    siguientes:{v9:'v1', v1:'v2', v2:'v11', v3:'v11', v4:'v11', v11:null},
+                    actual:'v11',
+                    primeraVacia:'v11',
+                    primeraFalla:null,
+                }
+            )
+        })
     })
 });
 

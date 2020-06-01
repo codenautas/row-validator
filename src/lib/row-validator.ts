@@ -39,15 +39,21 @@ export type FormStructureState = {
 };
 
 export interface RowValidatorSetup {
-    getFuncionHabilitar?:(name:string)=>((formData:RowData<string>)=>boolean)
+    getFuncionHabilitar:(name:string)=>((formData:RowData<string>)=>boolean)
+    nsnrTipicos:{[k:string]: any}
 }
 
-export function getRowValidator(setup:RowValidatorSetup){
-    setup.getFuncionHabilitar=setup.getFuncionHabilitar||(
-        (nombre:string)=>{
+export function getRowValidator(_setup:Partial<RowValidatorSetup>){
+    var setup:RowValidatorSetup={
+        ..._setup,
+        getFuncionHabilitar:(nombre:string)=>{
             throw new Error('rowValidator error. No existe la funcion habilitadora '+nombre);
+        },
+        nsnrTipicos:{
+            "-1":true,
+            "-9":true,
         }
-    );
+    };
     return function rowValidator<V extends string>(estructura:Structure<V>, formData:RowData<V>){
         var rta:FormStructureState={estados:{}, siguientes:{}, actual:null, primeraFalla:null, resumen:'vacio'};
         var respuestas=0;
@@ -125,7 +131,7 @@ export function getRowValidator(setup:RowValidatorSetup){
                             enSaltoAVariable=estructuraVar.salto;
                         }
                     }
-                }else if(valor==-9){
+                }else if(setup.nsnrTipicos[valor]){
                     respuestas++;
                     rta.estados[miVariable]='valida';
                     if(estructuraVar.saltoNsNr){
