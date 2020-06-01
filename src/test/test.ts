@@ -29,6 +29,7 @@ describe('row-validator', function(){
         discrepances.showAndThrow(
             state,
             {
+                resumen:'vacio',
                 estados:{v1:'actual', v2:'todavia_no', v3:'todavia_no', v4:'todavia_no'},
                 siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
                 actual:'v1',
@@ -43,6 +44,7 @@ describe('row-validator', function(){
         discrepances.showAndThrow(
             state,
             {
+                resumen:'con problemas',
                 estados:{v1:'valida', v2:'omitida', v3:'fuera_de_flujo_por_omitida', v4:'fuera_de_flujo_por_omitida'},
                 siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
                 actual:'v2',
@@ -57,6 +59,7 @@ describe('row-validator', function(){
         discrepances.showAndThrow(
             state,
             {
+                resumen:'con problemas',
                 estados:{v1:'valida', v2:'omitida', v3:'fuera_de_flujo_por_omitida', v4:'fuera_de_flujo_por_omitida'},
                 siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
                 actual:'v2',
@@ -71,6 +74,7 @@ describe('row-validator', function(){
         discrepances.showAndThrow(
             state,
             {
+                resumen:'incompleto',
                 estados:{v1:'valida', v2:'valida', v3:'salteada', v4:'actual'},
                 siguientes:{v1:'v2', v2:'v4', v3:'v4', v4:null},
                 actual:'v4',
@@ -85,6 +89,7 @@ describe('row-validator', function(){
         discrepances.showAndThrow(
             state,
             {
+                resumen:'con problemas',
                 estados:{v1:'valida', v2:'valida', v3:'fuera_de_flujo_por_salto', v4:'actual'},
                 siguientes:{v1:'v2', v2:'v4', v3:'v4', v4:null},
                 actual:'v4',
@@ -99,6 +104,7 @@ describe('row-validator', function(){
         discrepances.showAndThrow(
             state,
             {
+                resumen:'con problemas',
                 estados:{v1:'valida', v2:'invalida', v3:'valida', v4:'actual'},
                 siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
                 actual:'v4',
@@ -113,6 +119,7 @@ describe('row-validator', function(){
         discrepances.showAndThrow(
             state,
             {
+                resumen:'con problemas',
                 estados:{v1:'valida', v2:'valida', v3:'fuera_de_rango', v4:'actual'},
                 siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
                 actual:'v4',
@@ -128,6 +135,7 @@ describe('row-validator', function(){
         discrepances.showAndThrow(
             state,
             {
+                resumen:'con problemas',
                 estados:{v1:'valida', v2:'valida', v3:'fuera_de_rango', v4:'actual'},
                 siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
                 actual:'v4',
@@ -152,6 +160,7 @@ describe('row-validator', function(){
         discrepances.showAndThrow(
             state,
             {
+                resumen:'incompleto',
                 estados:{v9:'valida', v1:'valida', v2:'valida', v3:'valida', v4:'salteada', v11:'actual'},
                 siguientes:{v9:'v1', v1:'v2', v2:'v3', v3:'v11', v4:'v11', v11:null},
                 actual:'v11',
@@ -176,6 +185,7 @@ describe('row-validator', function(){
             discrepances.showAndThrow(
                 state,
                 {
+                    resumen:'ok',
                     estados:{v1:'valida', v2:'valida', v2_esp:'salteada', v3:'valida', v4:'valida'},
                     siguientes:{v1:'v2', v2:'v3', v2_esp:null, v3:'v4', v4:null},
                     actual:null,
@@ -190,6 +200,7 @@ describe('row-validator', function(){
             discrepances.showAndThrow(
                 state,
                 {
+                    resumen:'con problemas',
                     estados:{v1:'valida', v2:'valida', v2_esp:'fuera_de_flujo_por_salto', v3:'valida', v4:'valida'},
                     siguientes:{v1:'v2', v2:'v3', v2_esp:null, v3:'v4', v4:null},
                     actual:null,
@@ -225,6 +236,7 @@ describe('row-validator', function(){
             discrepances.showAndThrow(
                 state,
                 {
+                    resumen:'ok',
                     estados:{v1:'calculada', v2:'valida', v3:'salteada', v4:'calculada'},
                     siguientes:{v1:null, v2:'v4', v3:'v4', /* =====> */ v4:'v4' /* <===== */}, 
                     actual:null,
@@ -240,6 +252,7 @@ describe('row-validator', function(){
             discrepances.showAndThrow(
                 state,
                 {
+                    resumen:'incompleto',
                     estados:{v9:'valida', v1:'calculada', v2:'valida', v3:'salteada', v4:'calculada', v11:'actual'},
                     siguientes:{v9:'v2', v1:null, v2:'v11', v3:'v11', v4:null, v11:null},
                     actual:'v11',
@@ -253,6 +266,7 @@ describe('row-validator', function(){
             discrepances.showAndThrow(
                 state,
                 {
+                    resumen:'incompleto',
                     estados:{v9:'valida', v1:'calculada', v2:'actual', v3:'todavia_no', v4:'calculada', v11:'todavia_no'},
                     siguientes:{v9:'v2', v1:null, v2:'v3', v3:'v11', v4:null, v11:null},
                     actual:'v2',
@@ -287,6 +301,7 @@ describe('row-validator', function(){
             discrepances.showAndThrow(
                 state,
                 {
+                    resumen:'vacio',
                     estados:{v1:'optativa_sd', v2:'actual', v3:'todavia_no', v4:'todavia_no'},
                     siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
                     actual:'v2',
@@ -301,6 +316,7 @@ describe('row-validator', function(){
             discrepances.showAndThrow(
                 state,
                 {
+                    resumen:'con problemas',
                     estados:{v1:'optativa_sd', v2:'omitida', v3:'fuera_de_flujo_por_omitida', v4:'fuera_de_flujo_por_omitida'},
                     siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
                     actual:'v2',
@@ -315,6 +331,7 @@ describe('row-validator', function(){
             discrepances.showAndThrow(
                 state,
                 {
+                    resumen:'incompleto',
                     estados:{v1:'optativa_sd', v2:'valida', v3:'salteada', v4:'actual'},
                     siguientes:{v1:'v2', v2:'v4', v3:'v4', v4:null},
                     actual:'v4',
@@ -329,6 +346,7 @@ describe('row-validator', function(){
             discrepances.showAndThrow(
                 state,
                 {
+                    resumen:'incompleto',
                     estados:{v1:'valida', v2:'valida', v3:'salteada', v4:'actual'},
                     siguientes:{v1:'v2', v2:'v4', v3:'v4', v4:null},
                     actual:'v4',
@@ -343,6 +361,7 @@ describe('row-validator', function(){
             discrepances.showAndThrow(
                 state,
                 {
+                    resumen:'con problemas',
                     estados:{v1:'optativa_sd', v2:'valida', v3:'fuera_de_flujo_por_salto', v4:'actual'},
                     siguientes:{v1:'v2', v2:'v4', v3:'v4', v4:null},
                     actual:'v4',
@@ -357,6 +376,7 @@ describe('row-validator', function(){
             discrepances.showAndThrow(
                 state,
                 {
+                    resumen:'incompleto',
                     estados:{v9:'valida', v1:'valida', v2:'valida', v3:'optativa_sd', v4:'salteada', v11:'actual'},
                     siguientes:{v9:'v1', v1:'v2', v2:'v3', v3:'v11', v4:'v11', v11:null},
                     actual:'v11',
@@ -371,6 +391,7 @@ describe('row-validator', function(){
             discrepances.showAndThrow(
                 state,
                 {
+                    resumen:'incompleto',
                     estados:{v9:'valida', v1:'valida', v2:'valida', v3:'salteada', v4:'salteada', v11:'actual'},
                     siguientes:{v9:'v1', v1:'v2', v2:'v11', v3:'v11', v4:'v11', v11:null},
                     actual:'v11',
@@ -385,6 +406,7 @@ describe('row-validator', function(){
             discrepances.showAndThrow(
                 state,
                 {
+                    resumen:'incompleto',
                     estados:{v9:'valida', v1:'valida', v2:'valida', v3:'valida', v4:'actual', v11:'todavia_no'},
                     siguientes:{v9:'v1', v1:'v2', v2:'v3', v3:'v4', v4:'v11', v11:null},
                     actual:'v4',

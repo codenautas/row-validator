@@ -30,11 +30,12 @@ export type RowData<V extends string> = {
 }
 
 export type FormStructureState = {
+    resumen:'vacio'|'con problemas'|'incompleto'|'ok'
     estados:{[key:string]:string}
-    siguientes?:any
-    actual?:any
+    siguientes:any
+    actual:any
     primeraVacia?:any
-    primeraFalla?:any
+    primeraFalla:any
 };
 
 export interface RowValidatorSetup {
@@ -48,13 +49,16 @@ export function getRowValidator(setup:RowValidatorSetup){
         }
     );
     return function rowValidator<V extends string>(estructura:Structure<V>, formData:RowData<V>){
-        var rta:FormStructureState={estados:{}, siguientes:{}, actual:null, primeraFalla:null};
+        var rta:FormStructureState={estados:{}, siguientes:{}, actual:null, primeraFalla:null, resumen:'vacio'};
+        var respuestas=0;
+        var problemas=0;        
         var variableAnterior=null;
         var yaPasoLaActual=false;  // si ya vi la variable "actual"
         var enSaltoAVariable=null; // null si no estoy saltando y el destino del salto si estoy dentro de un salto. 
         var conOmitida=false;  // para poner naranja
         var miVariable:V; // variable actual del ciclo
         var falla=function(estado:string){
+            problemas++;
             rta.estados[miVariable]=estado;
             if(!rta.primeraFalla){
                 rta.primeraFalla=miVariable;
@@ -122,12 +126,14 @@ export function getRowValidator(setup:RowValidatorSetup){
                         }
                     }
                 }else if(valor==-9){
+                    respuestas++;
                     rta.estados[miVariable]='valida';
                     if(estructuraVar.saltoNsNr){
                         enSaltoAVariable=estructuraVar.saltoNsNr;
                     }
                     revisar_saltos_especiales=true;
                 }else{
+                    respuestas++;
                     // hay algo ingresado hay que validarlo
                     if(estructuraVar.tipo=='opciones'){
                         if(estructuraVar.opciones==null){
@@ -183,6 +189,19 @@ export function getRowValidator(setup:RowValidatorSetup){
                 }else if(rta.estados[miVariable]=='fuera_de_flujo_por_omitida'){
                     break;
                 }
+            }
+        }
+        if(problemas){
+            rta.resumen='con problemas';
+        }else{
+            if(rta.actual){
+                if(respuestas){
+                    rta.resumen='incompleto';
+                }else{
+                    rta.resumen='vacio';
+                }
+            }else{
+                rta.resumen='ok';
             }
         }
         return rta;

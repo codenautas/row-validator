@@ -5,6 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Fast mocha",
+            "request": "launch",
+            "type": "node",
+            "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+            "stopOnEntry": false,
+            "args": ["work/test/*.js"],
+            "cwd": "${workspaceFolder}",
+            "runtimeExecutable": null,
+            "env": { "NODE_ENV": "testing"},
+            "outFiles": [
+                "${workspaceFolder}/lib/**/*.js"
+            ]
+        },     
+        {
             // Name of configuration; appears in the launch configuration drop down menu.
             "name": "Run mocha",
             "request": "launch",

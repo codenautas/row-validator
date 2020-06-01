@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "outDir": "../../work",
-        "module": "none",
+        "module": "UMD",
         "target": "es2017",
         "lib":["es2017", "es2015"]
     },
