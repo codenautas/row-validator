@@ -6,24 +6,25 @@ export interface Opcion<V>{
     salto?:V|null
 }
 
-export interface Variable<V, FH>{
+export interface Variable<V, FH, FIN>{
     optativa?:boolean
-    salto?:V|null
+    salto?:V|FIN|null
     tipo:'opciones'|'numerico'|'texto'|string
-    opciones?:{[k in string|number]:Opcion<V>}
+    opciones?:{[k in string|number]:Opcion<V|FIN>}
     maximo?:number|null
     minimo?:number|null
     subordinadaVar?:V|null
     subordinadaValor?:Valor|null
-    saltoNsNr?:V|null
+    saltoNsNr?:V|FIN|null
     calculada?:boolean|null
     funcionHabilitar?:FH|null
 }
 
-export interface Structure<V extends string, FH extends string = string>{
+export interface Structure<V extends string, FIN = true, FH extends string = string>{
     variables:{
-        [k in V]:Variable<V, FH>
+        [k in V]:Variable<V, FH, FIN>
     }
+    marcaFin?:FIN
 }
 export type RowData<V extends string> = {
     [k in V]: any
@@ -54,7 +55,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
             "-9":true,
         }
     };
-    return function rowValidator<V extends string>(estructura:Structure<V>, formData:RowData<V>){
+    return function rowValidator<V extends string, FIN>(estructura:Structure<V, FIN>, formData:RowData<V>){
         var rta:FormStructureState={estados:{}, siguientes:{}, actual:null, primeraFalla:null, resumen:'vacio'};
         var respuestas=0;
         var problemas=0;        
@@ -155,7 +156,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                         }
                     }else if(estructuraVar.tipo=='numerico'){
                         valor=Number(valor);
-                        if(estructuraVar.maximo && valor > estructuraVar.maximo
+                        if(estructuraVar.maximo !=null && valor > estructuraVar.maximo
                             || estructuraVar.minimo != null && valor < estructuraVar.minimo){
                             falla('fuera_de_rango'); 
                         }else{
@@ -183,7 +184,11 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                 }
                 variableAnterior=miVariable;
             }
-            rta.siguientes[miVariable]=enSaltoAVariable; // es null si no hay salto (o sea sigue con la próxima o es la última)
+            if(!estructuraVar.calculada){
+                rta.siguientes[miVariable]=enSaltoAVariable; // es null si no hay salto (o sea sigue con la próxima o es la última)
+            }else{
+                rta.siguientes[miVariable]=null;
+            }
         }
         if(conOmitida){
             // @ts-expect-error recorro un objeto plano

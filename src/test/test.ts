@@ -128,7 +128,29 @@ describe('row-validator', function(){
             }
         )
     })
-    it("sobre máximo 0");
+    it("sobre máximo 0", function(){
+        var simpleStruct2:Structure<keyof SimpleRow>={
+            variables:{
+                v1:{tipo:'texto'},
+                v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}},
+                v3:{tipo:'numerico', minimo:-10, maximo:0},
+                v4:{tipo:'texto'}
+            }
+        }
+        var row:SimpleRow = {v1:'A', v2:2, v3:3, v4:null};
+        var state = rowValidator(simpleStruct2, row);
+        discrepances.showAndThrow(
+            state,
+            {
+                resumen:'con problemas',
+                estados:{v1:'valida', v2:'valida', v3:'fuera_de_rango', v4:'actual'},
+                siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                actual:'v4',
+                primeraVacia:'v4',
+                primeraFalla:'v3',
+            }
+        )
+    });
     it("bajo mínimo", function(){
         var row:SimpleRow = {v1:'A', v2:2, v3:-2, v4:null}
         var state = rowValidator(simpleStruct, row);
@@ -194,7 +216,6 @@ describe('row-validator', function(){
             )
         })
         it("la subordinada está marcada de más", function(){
-            // TODO: en vez de fuera_de_flujo_por_salto debería haber un nuevo estilo fuera_de_flujo_por_no_habilitada
             var row:RowConSubordinadas = {v1:'A', v2:2, v2_esp:'X', v3:1, v4:'B'}
             var state = rowValidator(conSubordinadaStruct, row);
             discrepances.showAndThrow(
@@ -222,15 +243,13 @@ describe('row-validator', function(){
             variables:{
                 v9:{tipo:'numerico'},
                 v1:{tipo:'texto', calculada:true},
-                v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}},
+                v2:{tipo:'opciones', opciones:{1:{salto:'v11'}, 2:{}}},
                 v3:{tipo:'numerico'},
                 v4:{tipo:'texto', calculada:true},
                 v11:{tipo:'numerico'},
             }
         }
         it("salta a la calculada final", function(){
-            // OJO, que la siguiente de la v4 sea la misma v4 es un error conceptual por aceptar que haya un salto a una calculada
-            // TODO: hay que agregar la forma de saltar al fin del renglón.
             var row:SimpleRow = {v1:'A', v2:1, v3:null, v4:null}
             var state = rowValidator(calculadasInicialFinalStruct, row);
             discrepances.showAndThrow(
@@ -238,15 +257,13 @@ describe('row-validator', function(){
                 {
                     resumen:'ok',
                     estados:{v1:'calculada', v2:'valida', v3:'salteada', v4:'calculada'},
-                    siguientes:{v1:null, v2:'v4', v3:'v4', /* =====> */ v4:'v4' /* <===== */}, 
+                    siguientes:{v1:null, v2:'v4', v3:'v4', v4:null}, 
                     actual:null,
                     primeraFalla:null,
                 }
             )
         })
-        it.skip("saltaea la calculada y va al final", function(){
-            // TODO: marca como siguiente la calculada y eso está mal
-            // Eso debería afectar solo al ENTER
+        it("saltaea la calculada y va la última", function(){
             var row:DesordenRow = {v9:1, v1:'A', v2:1, v3:null, v4:null, v11:null}
             var state = rowValidator(calculadasIntermedias, row);
             discrepances.showAndThrow(
@@ -256,6 +273,7 @@ describe('row-validator', function(){
                     estados:{v9:'valida', v1:'calculada', v2:'valida', v3:'salteada', v4:'calculada', v11:'actual'},
                     siguientes:{v9:'v2', v1:null, v2:'v11', v3:'v11', v4:null, v11:null},
                     actual:'v11',
+                    primeraVacia:'v11',
                     primeraFalla:null,
                 }
             )
@@ -271,6 +289,48 @@ describe('row-validator', function(){
                     siguientes:{v9:'v2', v1:null, v2:'v3', v3:'v11', v4:null, v11:null},
                     actual:'v2',
                     primeraVacia:'v2',
+                    primeraFalla:null,
+                }
+            )
+        })
+    });
+    describe("saltos al final", function(){
+        // var rowValidator = getRowValidator({});
+        var calculadasIntermedias:Structure<keyof DesordenRow, 'FIN'>={
+            marcaFin:'FIN',
+            variables:{
+                v9:{tipo:'numerico'},
+                v1:{tipo:'texto', optativa:true, calculada:true},
+                v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}, 3:{salto:'FIN'}}},
+                v3:{tipo:'numerico', salto:'FIN'},
+                v4:{tipo:'texto', calculada:true},
+                v11:{tipo:'numerico'},
+            }
+        }
+        it("desde opción va al final", function(){
+            var row:DesordenRow = {v9:1, v1:'A', v2:3, v3:null, v4:null, v11:null}
+            var state = rowValidator(calculadasIntermedias, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'ok',
+                    estados:{v9:'valida', v1:'calculada', v2:'valida', v3:'salteada', v4:'calculada', v11:'salteada'},
+                    siguientes:{v9:'v2', v1:null, v2:'FIN', v3:'FIN', v4:null, v11:'FIN'},
+                    actual:null,
+                    primeraFalla:null,
+                }
+            )
+        })
+        it("incondicionalmente va al final", function(){
+            var row:DesordenRow = {v9:1, v1:'A', v2:2, v3:4, v4:null, v11:null}
+            var state = rowValidator(calculadasIntermedias, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'ok',
+                    estados:{v9:'valida', v1:'calculada', v2:'valida', v3:'valida', v4:'calculada', v11:'salteada'},
+                    siguientes:{v9:'v2', v1:null, v2:'v3', v3:'FIN', v4:null, v11:'FIN'},
+                    actual:null,
                     primeraFalla:null,
                 }
             )
