@@ -46,14 +46,14 @@ export interface RowValidatorSetup {
 
 export function getRowValidator(_setup:Partial<RowValidatorSetup>){
     var setup:RowValidatorSetup={
-        ..._setup,
         getFuncionHabilitar:(nombre:string)=>{
             throw new Error('rowValidator error. No existe la funcion habilitadora '+nombre);
         },
         nsnrTipicos:{
             "-1":true,
             "-9":true,
-        }
+        },
+        ..._setup
     };
     return function rowValidator<V extends string, FIN>(estructura:Structure<V, FIN>, formData:RowData<V>){
         var rta:FormStructureState={estados:{}, siguientes:{}, actual:null, primeraFalla:null, resumen:'vacio'};

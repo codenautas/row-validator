@@ -23,9 +23,9 @@ describe('row-validator', function(){
             v4:{tipo:'texto'}
         }
     }
-    it("calcula un registro vacío", function(){
+    it("calcula un registro vacío", async function(){
         var rowVacia:SimpleRow = {v1:null, v2:null, v3:null, v4:null}
-        var state = rowValidator(simpleStruct, rowVacia);
+        var state = await rowValidator(simpleStruct, rowVacia);
         discrepances.showAndThrow(
             state,
             {
@@ -38,9 +38,9 @@ describe('row-validator', function(){
             }
         )
     })
-    it("calcula una variable omitida", function(){
+    it("calcula una variable omitida", async function(){
         var row:SimpleRow = {v1:'A', v2:null, v3:1, v4:null}
-        var state = rowValidator(simpleStruct, row);
+        var state = await rowValidator(simpleStruct, row);
         discrepances.showAndThrow(
             state,
             {
@@ -53,9 +53,9 @@ describe('row-validator', function(){
             }
         )
     })
-    it("calcula dos variables omitidas", function(){
+    it("calcula dos variables omitidas", async function(){
         var row:SimpleRow = {v1:'A', v2:null, v3:null, v4:'B'}
-        var state = rowValidator(simpleStruct, row);
+        var state = await rowValidator(simpleStruct, row);
         discrepances.showAndThrow(
             state,
             {
@@ -68,9 +68,9 @@ describe('row-validator', function(){
             }
         )
     })
-    it("marca un salto", function(){
+    it("marca un salto", async function(){
         var row:SimpleRow = {v1:'A', v2:1, v3:null, v4:null}
-        var state = rowValidator(simpleStruct, row);
+        var state = await rowValidator(simpleStruct, row);
         discrepances.showAndThrow(
             state,
             {
@@ -83,9 +83,9 @@ describe('row-validator', function(){
             }
         )
     })
-    it("una salteada está marcada", function(){
+    it("una salteada está marcada", async function(){
         var row:SimpleRow = {v1:'A', v2:1, v3:1, v4:null}
-        var state = rowValidator(simpleStruct, row);
+        var state = await rowValidator(simpleStruct, row);
         discrepances.showAndThrow(
             state,
             {
@@ -98,9 +98,9 @@ describe('row-validator', function(){
             }
         )
     })
-    it("opcion invalida", function(){
+    it("opcion invalida", async function(){
         var row:SimpleRow = {v1:'A', v2:15, v3:1, v4:null}
-        var state = rowValidator(simpleStruct, row);
+        var state = await rowValidator(simpleStruct, row);
         discrepances.showAndThrow(
             state,
             {
@@ -113,9 +113,9 @@ describe('row-validator', function(){
             }
         )
     })
-    it("sobre máximo", function(){
+    it("sobre máximo", async function(){
         var row:SimpleRow = {v1:'A', v2:2, v3:99, v4:null}
-        var state = rowValidator(simpleStruct, row);
+        var state = await rowValidator(simpleStruct, row);
         discrepances.showAndThrow(
             state,
             {
@@ -128,7 +128,7 @@ describe('row-validator', function(){
             }
         )
     })
-    it("sobre máximo 0", function(){
+    it("sobre máximo 0", async function(){
         var simpleStruct2:Structure<keyof SimpleRow>={
             variables:{
                 v1:{tipo:'texto'},
@@ -138,7 +138,7 @@ describe('row-validator', function(){
             }
         }
         var row:SimpleRow = {v1:'A', v2:2, v3:3, v4:null};
-        var state = rowValidator(simpleStruct2, row);
+        var state = await rowValidator(simpleStruct2, row);
         discrepances.showAndThrow(
             state,
             {
@@ -151,9 +151,9 @@ describe('row-validator', function(){
             }
         )
     });
-    it("bajo mínimo", function(){
+    it("bajo mínimo", async function(){
         var row:SimpleRow = {v1:'A', v2:2, v3:-2, v4:null}
-        var state = rowValidator(simpleStruct, row);
+        var state = await rowValidator(simpleStruct, row);
         discrepances.showAndThrow(
             state,
             {
@@ -166,7 +166,7 @@ describe('row-validator', function(){
             }
         )
     })
-    it("optativa llena con salto", function(){
+    it("optativa llena con salto", async function(){
         var saltoIncondicionalStruct:Structure<keyof DesordenRow>={
             variables:{
                 v9:{tipo:'numerico'},
@@ -178,7 +178,7 @@ describe('row-validator', function(){
             }
         }
         var row:DesordenRow = {v9:1, v1:'A', v2:2, v3:22, v4:null, v11:null}
-        var state = rowValidator(saltoIncondicionalStruct, row);
+        var state = await rowValidator(saltoIncondicionalStruct, row);
         discrepances.showAndThrow(
             state,
             {
@@ -191,7 +191,7 @@ describe('row-validator', function(){
             }
         )
     })
-    describe("variables subordinadas", function(){
+    describe("variables subordinadas", async function(){
         var conSubordinadaStruct:Structure<keyof RowConSubordinadas>={
             variables:{
                 v1:{tipo:'texto'},
@@ -201,9 +201,9 @@ describe('row-validator', function(){
                 v4:{tipo:'texto'}
             }
         }
-        it("completa salvo la subordinada", function(){
+        it("completa salvo la subordinada", async function(){
             var row:RowConSubordinadas = {v1:'A', v2:2, v2_esp:null, v3:1, v4:'B'}
-            var state = rowValidator(conSubordinadaStruct, row);
+            var state = await rowValidator(conSubordinadaStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -215,9 +215,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("la subordinada está marcada de más", function(){
+        it("la subordinada está marcada de más", async function(){
             var row:RowConSubordinadas = {v1:'A', v2:2, v2_esp:'X', v3:1, v4:'B'}
-            var state = rowValidator(conSubordinadaStruct, row);
+            var state = await rowValidator(conSubordinadaStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -230,7 +230,7 @@ describe('row-validator', function(){
             )
         })
     })
-    describe("variables calculadas", function(){
+    describe("variables calculadas", async function(){
         var calculadasInicialFinalStruct:Structure<keyof SimpleRow>={
             variables:{
                 v1:{tipo:'texto', calculada:true},
@@ -249,9 +249,9 @@ describe('row-validator', function(){
                 v11:{tipo:'numerico'},
             }
         }
-        it("salta a la calculada final", function(){
+        it("salta a la calculada final", async function(){
             var row:SimpleRow = {v1:'A', v2:1, v3:null, v4:null}
-            var state = rowValidator(calculadasInicialFinalStruct, row);
+            var state = await rowValidator(calculadasInicialFinalStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -263,9 +263,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("saltaea la calculada y va la última", function(){
+        it("saltaea la calculada y va la última", async function(){
             var row:DesordenRow = {v9:1, v1:'A', v2:1, v3:null, v4:null, v11:null}
-            var state = rowValidator(calculadasIntermedias, row);
+            var state = await rowValidator(calculadasIntermedias, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -278,9 +278,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("variable calculada posterior a la actual", function(){
+        it("variable calculada posterior a la actual", async function(){
             var row:DesordenRow = {v9:1, v1:'A', v2:null, v3:null, v4:'calculada', v11:null}
-            var state = rowValidator(calculadasIntermedias, row);
+            var state = await rowValidator(calculadasIntermedias, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -294,7 +294,7 @@ describe('row-validator', function(){
             )
         })
     });
-    describe("saltos al final", function(){
+    describe("saltos al final", async function(){
         var calculadasIntermedias:Structure<keyof DesordenRow, 'FIN'>={
             marcaFin:'FIN',
             variables:{
@@ -306,9 +306,9 @@ describe('row-validator', function(){
                 v11:{tipo:'numerico'},
             }
         }
-        it("desde opción va al final", function(){
+        it("desde opción va al final", async function(){
             var row:DesordenRow = {v9:1, v1:'A', v2:3, v3:null, v4:null, v11:null}
-            var state = rowValidator(calculadasIntermedias, row);
+            var state = await rowValidator(calculadasIntermedias, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -320,9 +320,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("incondicionalmente va al final", function(){
+        it("incondicionalmente va al final", async function(){
             var row:DesordenRow = {v9:1, v1:'A', v2:2, v3:4, v4:null, v11:null}
-            var state = rowValidator(calculadasIntermedias, row);
+            var state = await rowValidator(calculadasIntermedias, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -334,9 +334,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("incondicionalmente va al final con nsnc", function(){
+        it("incondicionalmente va al final con nsnc", async function(){
             var row:DesordenRow = {v9:1, v1:'A', v2:2, v3:-9, v4:null, v11:null}
-            var state = rowValidator(calculadasIntermedias, row);
+            var state = await rowValidator(calculadasIntermedias, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -349,7 +349,7 @@ describe('row-validator', function(){
             )
         })
     });
-    describe("variables optativas", function(){
+    describe("variables optativas", async function(){
         var la1OptativaStruct:Structure<keyof SimpleRow>={
             variables:{
                 v1:{tipo:'texto', optativa:true},
@@ -368,9 +368,9 @@ describe('row-validator', function(){
                 v11:{tipo:'numerico'}
             }
         }
-        it("calcula un registro vacío", function(){
+        it("calcula un registro vacío", async function(){
             var rowVacia:SimpleRow = {v1:null, v2:null, v3:null, v4:null}
-            var state = rowValidator(la1OptativaStruct, rowVacia);
+            var state = await rowValidator(la1OptativaStruct, rowVacia);
             discrepances.showAndThrow(
                 state,
                 {
@@ -383,9 +383,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("calcula una variable omitida", function(){
+        it("calcula una variable omitida", async function(){
             var row:SimpleRow = {v1:null, v2:null, v3:1, v4:null}
-            var state = rowValidator(la1OptativaStruct, row);
+            var state = await rowValidator(la1OptativaStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -398,9 +398,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("marca un salto", function(){
+        it("marca un salto", async function(){
             var row:SimpleRow = {v1:null, v2:1, v3:null, v4:null}
-            var state = rowValidator(la1OptativaStruct, row);
+            var state = await rowValidator(la1OptativaStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -413,9 +413,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("optativa presente", function(){
+        it("optativa presente", async function(){
             var row:SimpleRow = {v1:'A', v2:1, v3:null, v4:null}
-            var state = rowValidator(la1OptativaStruct, row);
+            var state = await rowValidator(la1OptativaStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -428,9 +428,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("una salteada está marcada", function(){
+        it("una salteada está marcada", async function(){
             var row:SimpleRow = {v1:null, v2:1, v3:1, v4:null}
-            var state = rowValidator(la1OptativaStruct, row);
+            var state = await rowValidator(la1OptativaStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -443,9 +443,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("salto en opción con incondicional", function(){
+        it("salto en opción con incondicional", async function(){
             var row:DesordenRow = {v9:1, v1:'A', v2:2, v3:1, v4:null, v11:null}
-            var state = rowValidator(la3OptativaStruct, row);
+            var state = await rowValidator(la3OptativaStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -458,9 +458,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("optativa con salto", function(){
+        it("optativa con salto", async function(){
             var row:DesordenRow = {v9:1, v1:'A', v2:2, v3:null, v4:null, v11:null}
-            var state = rowValidator(la3OptativaStruct, row);
+            var state = await rowValidator(la3OptativaStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -473,9 +473,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("nsnr con salto", function(){
+        it("nsnr con salto", async function(){
             var row:DesordenRow = {v9:1, v1:'A', v2:-9, v3:null, v4:null, v11:null}
-            var state = rowValidator(la3OptativaStruct, row);
+            var state = await rowValidator(la3OptativaStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -488,9 +488,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("nsnr sin salto", function(){
+        it("nsnr sin salto", async function(){
             var row:DesordenRow = {v9:-1, v1:'A', v2:2, v3:2, v4:null, v11:null}
-            var state = rowValidator(la3OptativaStruct, row);
+            var state = await rowValidator(la3OptativaStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -502,9 +502,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("nsnr sin salto especial con salto incondicional", function(){
+        it("nsnr sin salto especial con salto incondicional", async function(){
             var row:DesordenRow = {v9:1, v1:'A', v2:2, v3:-9, v4:null, v11:null}
-            var state = rowValidator(la3OptativaStruct, row);
+            var state = await rowValidator(la3OptativaStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -516,9 +516,9 @@ describe('row-validator', function(){
                 }
             )
         })
-        it("nsnr -1 con salto", function(){
+        it("nsnr -1 con salto", async function(){
             var row:DesordenRow = {v9:1, v1:'A', v2:-1, v3:null, v4:null, v11:null}
-            var state = rowValidator(la3OptativaStruct, row);
+            var state = await rowValidator(la3OptativaStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
@@ -534,24 +534,24 @@ describe('row-validator', function(){
     })
 });
 
-describe('row-validator setup', function(){
+describe('row-validator setup', async function(){
     var rowValidator = getRowValidator({});
     var simpleRow:Structure<string>={
         variables:{
             v1:{tipo:'texto', funcionHabilitar:'inexistente'},
         }
     }
-    it("calcula un registro vacío", function(){
+    it("calcula un registro vacío", async function(){
         try{
-            rowValidator(simpleRow, {v1:null});
+            await rowValidator(simpleRow, {v1:null});
             throw new Error('debia fallar');
         }catch(err){
             discrepances.showAndThrow(err,new Error('rowValidator error. No existe la funcion habilitadora inexistente'));
         }
     })
-    it("tipo opciones sin opciones", function(){
+    it("tipo opciones sin opciones", async function(){
         try{
-            rowValidator({variables:{v1:{tipo:'opciones'}}}, {v1:1});
+            await rowValidator({variables:{v1:{tipo:'opciones'}}}, {v1:1});
             throw new Error('debia fallar');
         }catch(err){
             discrepances.showAndThrow(err,new Error("rowValidator error. Variable \"v1\" sin opciones"));
