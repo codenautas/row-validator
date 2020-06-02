@@ -132,17 +132,15 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                             enSaltoAVariable=estructuraVar.salto;
                         }
                     }
-                }else if(setup.nsnrTipicos[valor]){
-                    respuestas++;
-                    rta.estados[miVariable]='valida';
-                    if(estructuraVar.saltoNsNr){
-                        enSaltoAVariable=estructuraVar.saltoNsNr;
-                    }
-                    revisar_saltos_especiales=true;
                 }else{
                     respuestas++;
                     // hay algo ingresado hay que validarlo
-                    if(estructuraVar.tipo=='opciones'){
+                    if(setup.nsnrTipicos[valor]){
+                        rta.estados[miVariable]='valida';
+                        if(estructuraVar.saltoNsNr){
+                            enSaltoAVariable=estructuraVar.saltoNsNr;
+                        }
+                    }else if(estructuraVar.tipo=='opciones'){
                         if(estructuraVar.opciones==null){
                             throw new Error('rowValidator error. Variable "'+miVariable+'" sin opciones')
                         }
@@ -166,7 +164,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                         // las de texto o de ingreso libre son válidas si no se invalidaron antes por problemas de flujo
                         rta.estados[miVariable]='valida'; 
                     }
-                    if(estructuraVar.salto){
+                    if(enSaltoAVariable==null && estructuraVar.salto){
                         enSaltoAVariable=estructuraVar.salto;
                     }
                     revisar_saltos_especiales=true;

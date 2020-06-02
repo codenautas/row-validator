@@ -295,7 +295,6 @@ describe('row-validator', function(){
         })
     });
     describe("saltos al final", function(){
-        // var rowValidator = getRowValidator({});
         var calculadasIntermedias:Structure<keyof DesordenRow, 'FIN'>={
             marcaFin:'FIN',
             variables:{
@@ -335,6 +334,20 @@ describe('row-validator', function(){
                 }
             )
         })
+        it("incondicionalmente va al final con nsnc", function(){
+            var row:DesordenRow = {v9:1, v1:'A', v2:2, v3:-9, v4:null, v11:null}
+            var state = rowValidator(calculadasIntermedias, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'ok',
+                    estados:{v9:'valida', v1:'calculada', v2:'valida', v3:'valida', v4:'calculada', v11:'salteada'},
+                    siguientes:{v9:'v2', v1:null, v2:'v3', v3:'FIN', v4:null, v11:'FIN'},
+                    actual:null,
+                    primeraFalla:null,
+                }
+            )
+        })
     });
     describe("variables optativas", function(){
         var la1OptativaStruct:Structure<keyof SimpleRow>={
@@ -350,7 +363,7 @@ describe('row-validator', function(){
                 v9:{tipo:'numerico'},
                 v1:{tipo:'texto'},
                 v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}, saltoNsNr:'v11'},
-                v3:{tipo:'opciones', opciones:{1:{salto:'v11'}, 2:{}}, optativa:true, salto:'v11'},
+                v3:{tipo:'opciones', opciones:{1:{salto:'v11'}, 2:{}}, optativa:true, salto:true},
                 v4:{tipo:'texto'},
                 v11:{tipo:'numerico'}
             }
@@ -430,16 +443,31 @@ describe('row-validator', function(){
                 }
             )
         })
+        it("salto en opción con incondicional", function(){
+            var row:DesordenRow = {v9:1, v1:'A', v2:2, v3:1, v4:null, v11:null}
+            var state = rowValidator(la3OptativaStruct, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'incompleto',
+                    estados:{v9:'valida', v1:'valida', v2:'valida', v3:'valida', v4:'salteada', v11:'actual'},
+                    siguientes:{v9:'v1', v1:'v2', v2:'v3', v3:'v11', v4:'v11', v11:null},
+                    actual:'v11',
+                    primeraVacia:'v11',
+                    primeraFalla:null,
+                }
+            )
+        })
         it("optativa con salto", function(){
             var row:DesordenRow = {v9:1, v1:'A', v2:2, v3:null, v4:null, v11:null}
             var state = rowValidator(la3OptativaStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
-                    resumen:'incompleto',
-                    estados:{v9:'valida', v1:'valida', v2:'valida', v3:'optativa_sd', v4:'salteada', v11:'actual'},
-                    siguientes:{v9:'v1', v1:'v2', v2:'v3', v3:'v11', v4:'v11', v11:null},
-                    actual:'v11',
+                    resumen:'ok',
+                    estados:{v9:'valida', v1:'valida', v2:'valida', v3:'optativa_sd', v4:'salteada', v11:'salteada'},
+                    siguientes:{v9:'v1', v1:'v2', v2:'v3', v3:true, v4:true, v11:true},
+                    actual:null,
                     primeraVacia:'v3',
                     primeraFalla:null,
                 }
@@ -461,16 +489,29 @@ describe('row-validator', function(){
             )
         })
         it("nsnr sin salto", function(){
+            var row:DesordenRow = {v9:-1, v1:'A', v2:2, v3:2, v4:null, v11:null}
+            var state = rowValidator(la3OptativaStruct, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'ok',
+                    estados:{v9:'valida', v1:'valida', v2:'valida', v3:'valida', v4:'salteada', v11:'salteada'},
+                    siguientes:{v9:'v1', v1:'v2', v2:'v3', v3:true, v4:true, v11:true},
+                    actual:null,
+                    primeraFalla:null,
+                }
+            )
+        })
+        it("nsnr sin salto especial con salto incondicional", function(){
             var row:DesordenRow = {v9:1, v1:'A', v2:2, v3:-9, v4:null, v11:null}
             var state = rowValidator(la3OptativaStruct, row);
             discrepances.showAndThrow(
                 state,
                 {
-                    resumen:'incompleto',
-                    estados:{v9:'valida', v1:'valida', v2:'valida', v3:'valida', v4:'actual', v11:'todavia_no'},
-                    siguientes:{v9:'v1', v1:'v2', v2:'v3', v3:'v4', v4:'v11', v11:null},
-                    actual:'v4',
-                    primeraVacia:'v4',
+                    resumen:'ok',
+                    estados:{v9:'valida', v1:'valida', v2:'valida', v3:'valida', v4:'salteada', v11:'salteada'},
+                    siguientes:{v9:'v1', v1:'v2', v2:'v3', v3:true, v4:true, v11:true},
+                    actual:null,
                     primeraFalla:null,
                 }
             )
