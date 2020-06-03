@@ -3,21 +3,23 @@
 export type Valor = string | number | boolean | null
 
 export interface Opcion<V>{
-    salto?:V|null
+    salto?:V|null         // Destino del salto para la opción seleccionada
 }
 
 export interface Variable<V, FH, FIN>{
-    optativa?:boolean
-    salto?:V|FIN|null
+    optativa?:boolean     // Obligatoriedad el ingreso de la variable
+    salto?:V|FIN|null     // Destino del salto en caso de saltos icondicionales
     tipo:'opciones'|'numerico'|'texto'|string
     opciones?:{[k in string|number]:Opcion<V|FIN>}
-    maximo?:number|null
-    minimo?:number|null
-    subordinadaVar?:V|null
-    subordinadaValor?:Valor|null
-    saltoNsNr?:V|FIN|null
-    calculada?:boolean|null
-    funcionHabilitar?:FH|null
+    maximo?:number|null   // Máximo valor válido
+    minimo?:number|null   // Míximo valor válido
+    // Para variables de especifique dependientes de una opción:
+        subordinadaVar?:V|null           // variable de la que depende
+        subordinadaValor?:Valor|null     // valor que la activa
+    saltoNsNr?:V|FIN|null       // Salto en el caso de no respuesta o NS/NC
+    calculada?:boolean|null     // Si la variable es calculada (no ingresada)
+    funcionHabilitar?:FH|null   // Determina la habilitación dinámica
+    libre?:boolean|null         // Posibilidad de ingresarla aunque esté salteada
 }
 
 export interface Structure<V extends string, FIN = true, FH extends string = string>{
@@ -84,13 +86,13 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
             }else if(enSaltoAVariable && miVariable!=enSaltoAVariable){
                 apagada=true;
                 // estoy dentro de un salto válido, no debería haber datos ingresados.
-                if(valor===null){
+                if(valor===null || estructuraVar.libre){
                     rta.estados[miVariable]='salteada';
                 }else{
                     falla('fuera_de_flujo_por_salto');
                 }
             }else if(yaPasoLaActual){
-                if(valor===null){
+                if(valor===null || estructuraVar.libre){
                     rta.estados[miVariable]='todavia_no';
                 }else{
                     conOmitida=true;
