@@ -23,8 +23,9 @@ describe('row-validator', function(){
             v4:{tipo:'texto'}
         }
     }
-    it("calcula un registro vacío", async function(){
-        var rowVacia:SimpleRow = {v1:null, v2:null, v3:null, v4:null}
+    it("calcula un registro vacío (null y undefined)", async function(){
+        //@ts-expect-error v4 no debería ser undefined, sin embargo el validator lo tiene que tomar como null
+        var rowVacia:SimpleRow = {v1:null, v2:null, v3:null, v4:undefined}
         var state = await rowValidator(simpleStruct, rowVacia);
         discrepances.showAndThrow(
             state,
@@ -544,6 +545,21 @@ describe('row-validator', function(){
         }
         it("calcula un registro vacío con libre", async function(){
             var rowVacia:SimpleRow = {v1:null, v2:null, v3:null, v4:null}
+            var state = await rowValidator(simpleStruct, rowVacia);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'vacio',
+                    estados:{v1:'actual', v2:'todavia_no', v3:'todavia_no', v4:'todavia_no'},
+                    siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                    actual:'v1',
+                    primeraVacia:'v1',
+                    primeraFalla:null,
+                }
+            )
+        })
+        it("calcula un registro cuasi vacío con libre", async function(){
+            var rowVacia:SimpleRow = {v1:null, v2:null, v3:3, v4:null}
             var state = await rowValidator(simpleStruct, rowVacia);
             discrepances.showAndThrow(
                 state,

@@ -8,6 +8,8 @@ Especialmente diseñado para encuestas
 [![downloads](https://img.shields.io/npm/dm/row-validator.svg)](https://npmjs.org/package/row-validator)
 [![Node.js CI](https://github.com/codenautas/row-validator/workflows/Node.js%20CI/badge.svg)](https://github.com/codenautas/row-validator/actions?query=workflow%3A%22Node.js+CI%22)
 [![Coverage Status](https://coveralls.io/repos/github/codenautas/row-validator/badge.svg?branch=master)](https://coveralls.io/github/codenautas/row-validator?branch=master)
+[![dependencies](https://img.shields.io/david/codenautas/row-validator.svg)](https://david-dm.org/codenautas/row-validator)
+
 
 # Estructura
 

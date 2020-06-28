@@ -86,13 +86,13 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
             }else if(enSaltoAVariable && miVariable!=enSaltoAVariable){
                 apagada=true;
                 // estoy dentro de un salto válido, no debería haber datos ingresados.
-                if(valor===null || estructuraVar.libre){
+                if(valor == null || estructuraVar.libre){
                     rta.estados[miVariable]='salteada';
                 }else{
                     falla('fuera_de_flujo_por_salto');
                 }
             }else if(yaPasoLaActual){
-                if(valor===null || estructuraVar.libre){
+                if(valor == null || estructuraVar.libre){
                     rta.estados[miVariable]='todavia_no';
                 }else{
                     conOmitida=true;
@@ -112,7 +112,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                 //   1) está subordinada y no es el valor que la activa
                 //   2) la expresión habilitar falla
                 apagada=true;
-                if(valor===null){
+                if(valor == null){
                     rta.estados[miVariable]='salteada';
                 }else{
                     falla('fuera_de_flujo_por_salto');
@@ -120,7 +120,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
             }else{
                 // no estoy en una variable salteada y estoy dentro del flujo normal (no hubo omitidas hasta ahora). 
                 enSaltoAVariable=null; // si estaba en un salto acá se acaba
-                if(valor===null){
+                if(valor == null){
                     if(!rta.primeraVacia){
                         rta.primeraVacia=miVariable;
                     }
