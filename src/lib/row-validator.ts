@@ -32,13 +32,17 @@ export type RowData<V extends string> = {
     [k in V]: any
 }
 
-export type FormStructureState = {
+export type EstadoVariableNormales = 'actual'|'valida'|'todavia_no'|'calculada'|'salteada'|'optativa_sd'
+export type EstadoVariableErroneas = 'invalida'|'omitida'|'fuera_de_rango'|'fuera_de_flujo_por_omitida'|'fuera_de_flujo_por_salto'
+export type EstadoVariable = EstadoVariableNormales | EstadoVariableErroneas
+
+export type FormStructureState<V extends string, FIN> = {
     resumen:'vacio'|'con problemas'|'incompleto'|'ok'
-    estados:{[key:string]:string}
-    siguientes:any
-    actual:any
-    primeraVacia?:any
-    primeraFalla:any
+    estados:{[key in V]?:EstadoVariable}
+    siguientes:{[key in V]?:V|FIN|null}
+    actual:V|null
+    primeraVacia?:V|null
+    primeraFalla:V|null
 };
 
 export interface RowValidatorSetup {
@@ -58,7 +62,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
         ..._setup
     };
     return function rowValidator<V extends string, FIN>(estructura:Structure<V, FIN>, formData:RowData<V>){
-        var rta:FormStructureState={estados:{}, siguientes:{}, actual:null, primeraFalla:null, resumen:'vacio'};
+        var rta:FormStructureState<V, FIN>={estados:{}, siguientes:{}, actual:null, primeraFalla:null, resumen:'vacio'};
         var respuestas=0;
         var problemas=0;        
         var variableAnterior=null;
@@ -66,7 +70,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
         var enSaltoAVariable=null; // null si no estoy saltando y el destino del salto si estoy dentro de un salto. 
         var conOmitida=false;  // para poner naranja
         var miVariable:V; // variable actual del ciclo
-        var falla=function(estado:string){
+        var falla=function(estado:EstadoVariable){
             problemas++;
             rta.estados[miVariable]=estado;
             if(!rta.primeraFalla){
@@ -191,7 +195,6 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
             }
         }
         if(conOmitida){
-            // @ts-expect-error recorro un objeto plano
             for(miVariable in rta.estados){
                 if(rta.estados[miVariable]=='actual'){
                     rta.estados[miVariable]='omitida';

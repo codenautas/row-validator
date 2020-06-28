@@ -1,7 +1,7 @@
 {
   "name": "row-validator",
   "description": "Validator for rows of surveys",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "author": "Codenautas <codenautas@googlegroups.com>",
   "license": "MIT",
   "files": [
