@@ -36,7 +36,7 @@ export type EstadoVariableNormales = 'actual'|'valida'|'todavia_no'|'calculada'|
 export type EstadoVariableErroneas = 'invalida'|'omitida'|'fuera_de_rango'|'fuera_de_flujo_por_omitida'|'fuera_de_flujo_por_salto'
 export type EstadoVariable = EstadoVariableNormales | EstadoVariableErroneas
 
-type Feedback<V extends string, FIN>={
+export type Feedback<V extends string, FIN>={
     estado:EstadoVariable
     siguiente:V|FIN|null|undefined
     apagada:boolean
