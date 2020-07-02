@@ -7,14 +7,22 @@
 /* global it */
 
 import * as discrepances from "discrepances";
-import { getRowValidator, Structure } from "../lib/row-validator";
+import { FormStructureState, getRowValidator, Structure, RowData } from "../lib/row-validator";
 
 type SimpleRow={v1:string|null, v2:number|null, v3:number|null, v4:string|null}
 type RowConSubordinadas=SimpleRow & {v2_esp:string|null}
 type DesordenRow=SimpleRow & {v9:number|null, v11:number|null}
 
+function getRowValidatorSinMultiestado(){
+    var rowValidatorInterno = getRowValidator({multiEstado:false});
+    return <V extends string, FIN>(estructura: Structure<V, FIN, string>, formData: RowData<V>):Omit<FormStructureState<V, FIN>,'feedback'|'feedbackResumen'> => {
+        return rowValidatorInterno(estructura,formData);
+    }
+   
+}
+
 describe('row-validator', function(){
-    var rowValidator = getRowValidator({});
+    var rowValidator = getRowValidatorSinMultiestado()
     var simpleStruct:Structure<keyof SimpleRow>={
         variables:{
             v1:{tipo:'texto'},
@@ -294,6 +302,139 @@ describe('row-validator', function(){
                 }
             )
         })
+        describe("funcionHabilitar", function(){
+            var getFuncionHabilitar=(nombre:string)=>{
+                switch(nombre){
+                    case 'v1eq1':
+                        return (formData:RowData<string>)=>formData.v1==1;
+                    default:
+                        throw new Error('no encontrado')
+                }
+            };
+            var rowValidator = getRowValidator({
+                getFuncionHabilitar,
+            });
+            var simpleStruct:Structure<keyof SimpleRow>={
+                variables:{
+                    v1:{tipo:'texto'},
+                    v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}, funcionHabilitar:'v1eq1'},
+                    v3:{tipo:'numerico', minimo:0, maximo:98, funcionHabilitar:'v1eq1'},
+                    v4:{tipo:'texto'}
+                }
+            }
+            var NULL = (_loQueMeGustaríaQueDeEnElFuturo:any)=>null && "es lo que da ahora";
+            it("calcula un registro vacío e inhabilitado", async function(){
+                //@ts-expect-error v4 no debería ser undefined, sin embargo el validator lo tiene que tomar como null
+                var rowVacia:SimpleRow = {v1:null, v2:null, v3:null, v4:undefined}
+                var state = await rowValidator(simpleStruct, rowVacia);
+                discrepances.showAndThrow(
+                    state,
+                    {
+                        resumen:'vacio',
+                        feedback:{
+                            v1:{estado:'actual'    , siguiente:'v2', conDato:false, conProblema:false, pendiente:true ,apagada:false,inhabilitada:false,},
+                            v2:{estado:'todavia_no', siguiente:'v3', conDato:false, conProblema:false, pendiente:false,apagada:false,inhabilitada:true ,},
+                            v3:{estado:'todavia_no', siguiente:'v4', conDato:false, conProblema:false, pendiente:false,apagada:false,inhabilitada:true ,},
+                            v4:{estado:'todavia_no', siguiente:null, conDato:false, conProblema:false, pendiente:null ,apagada:false,inhabilitada:false,},
+                        },
+                        feedbackResumen:{estado:'todavia_no', conDato:false, conProblema:false, pendiente:true},
+                        estados:{v1:'actual', v2:'todavia_no', v3:'todavia_no', v4:'todavia_no'},
+                        siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                        actual:'v1',
+                        primeraVacia:'v1',
+                        primeraFalla:null,
+                    }
+                )
+            })
+            it("calcula una variable omitida habilitada", async function(){
+                var row:SimpleRow = {v1:'1', v2:null, v3:1, v4:null}
+                var state = await rowValidator(simpleStruct, row);
+                discrepances.showAndThrow(
+                    state,
+                    {
+                        resumen:'con problemas',
+                        feedback:{
+                            v1:{estado:'valida'                    , siguiente:'v2', conDato:true , conProblema:false, pendiente:false,apagada:false,inhabilitada:false,},
+                            v2:{estado:'omitida'                   , siguiente:'v3', conDato:false, conProblema:false, pendiente:true ,apagada:false,inhabilitada:false,},
+                            v3:{estado:'fuera_de_flujo_por_omitida', siguiente:'v4', conDato:true , conProblema:true , pendiente:null ,apagada:false,inhabilitada:false,},
+                            v4:{estado:'fuera_de_flujo_por_omitida', siguiente:null, conDato:false, conProblema:true , pendiente:null ,apagada:false,inhabilitada:false,},
+                        },
+                        feedbackResumen:{estado:'fuera_de_flujo_por_omitida', conDato:true, conProblema:true, pendiente:true},
+                        estados:{v1:'valida', v2:'omitida', v3:'fuera_de_flujo_por_omitida', v4:'fuera_de_flujo_por_omitida'},
+                        siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                        actual:'v2',
+                        primeraVacia:'v2',
+                        primeraFalla:'v2',
+                    }
+                )
+            })
+            it("calcula dos variables omitidas inhabilitadas", async function(){
+                var row:SimpleRow = {v1:'1', v2:null, v3:null, v4:'B'}
+                var state = await rowValidator(simpleStruct, row);
+                discrepances.showAndThrow(
+                    state,
+                    {
+                        resumen:'con problemas',
+                        feedback:{
+                            v1:{estado:'valida'                    , siguiente:'v2', conDato:true , conProblema:false, pendiente:false,apagada:false,inhabilitada:false,},
+                            v2:{estado:'omitida'                   , siguiente:'v3', conDato:false, conProblema:false, pendiente:true ,apagada:false,inhabilitada:false,},
+                            v3:{estado:'fuera_de_flujo_por_omitida', siguiente:'v4', conDato:false, conProblema:false, pendiente:null ,apagada:false,inhabilitada:false,},
+                            v4:{estado:'fuera_de_flujo_por_omitida', siguiente:null, conDato:true , conProblema:true , pendiente:null ,apagada:false,inhabilitada:false,},
+                        },
+                        feedbackResumen:{estado:'fuera_de_flujo_por_omitida', conDato:true, conProblema:true, pendiente:true ,},
+                        estados:{v1:'valida', v2:'omitida', v3:'fuera_de_flujo_por_omitida', v4:'fuera_de_flujo_por_omitida'},
+                        siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                        actual:'v2',
+                        primeraVacia:'v2',
+                        primeraFalla:'v2',
+                    }
+                )
+            })
+            it("salto inhabilitado", async function(){
+                var row:SimpleRow = {v1:'A', v2:1, v3:null, v4:null}
+                var state = await rowValidator(simpleStruct, row);
+                discrepances.showAndThrow(
+                    state,
+                    {
+                        resumen:'con problemas',
+                        feedback:{
+                            v1:{estado:'valida'                  , siguiente:'v4', conDato:true , conProblema:false, pendiente:false,apagada:false,inhabilitada:false,},
+                            v2:{estado:'fuera_de_flujo_por_salto', siguiente:null, conDato:true , conProblema:true , pendiente:false,apagada:false,inhabilitada:true ,},
+                            v3:{estado:'salteada'                , siguiente:null, conDato:false, conProblema:false, pendiente:false,apagada:false,inhabilitada:true ,},
+                            v4:{estado:'actual'                  , siguiente:null, conDato:false, conProblema:false, pendiente:true ,apagada:false,inhabilitada:false,},
+                        },
+                        feedbackResumen:{estado:'fuera_de_flujo_por_salto', conDato:true, conProblema:true, pendiente:true},
+                        estados:{v1:'valida', v2:'fuera_de_flujo_por_salto', v3:'salteada', v4:'actual'},
+                        siguientes:{v1:'v4', v2:NULL('v4'), v3:NULL('v4'), v4:null},
+                        actual:'v4',
+                        primeraVacia:'v4',
+                        primeraFalla:'v2',
+                    }
+                )
+            })
+            it("una salteada está marcada", async function(){
+                var row:SimpleRow = {v1:'A', v2:null, v3:1, v4:null}
+                var state = await rowValidator(simpleStruct, row);
+                discrepances.showAndThrow(
+                    state,
+                    {
+                        resumen:'con problemas',
+                        feedback:{
+                            v1:{estado:'valida'                  , siguiente:'v4', conDato:true , conProblema:false, pendiente:false,apagada:false,inhabilitada:false,},
+                            v2:{estado:'salteada'                , siguiente:null, conDato:false, conProblema:false, pendiente:false,apagada:false,inhabilitada:true ,},
+                            v3:{estado:'fuera_de_flujo_por_salto', siguiente:null, conDato:true , conProblema:true , pendiente:false,apagada:false,inhabilitada:true ,},
+                            v4:{estado:'actual'                  , siguiente:null, conDato:false, conProblema:false, pendiente:true ,apagada:false,inhabilitada:false,},
+                        },
+                        feedbackResumen:{estado:'fuera_de_flujo_por_salto', conDato:true, conProblema:true, pendiente:true},
+                         estados:{v1:'valida', v2:'salteada', v3:'fuera_de_flujo_por_salto', v4:'actual'},
+                        siguientes:{v1:'v4', v2:NULL('v4'), v3:NULL('v4'), v4:null},
+                        actual:'v4',
+                        primeraVacia:'v4',
+                        primeraFalla:'v3',
+                    }
+                )
+            })
+        })
     });
     describe("saltos al final", async function(){
         var calculadasIntermedias:Structure<keyof DesordenRow, 'FIN'>={
@@ -534,7 +675,7 @@ describe('row-validator', function(){
         })
     })
     describe('libre', function(){
-        var rowValidator = getRowValidator({});
+        var rowValidator = getRowValidatorSinMultiestado();
         var simpleStruct:Structure<keyof SimpleRow>={
             variables:{
                 v1:{tipo:'texto'},
@@ -632,11 +773,11 @@ describe('row-validator', function(){
                 }
             )
         })
-        });
+    });
 });
 
 describe('row-validator setup', async function(){
-    var rowValidator = getRowValidator({});
+    var rowValidator = getRowValidator({multiEstado:false});
     var simpleRow:Structure<string>={
         variables:{
             v1:{tipo:'texto', funcionHabilitar:'inexistente'},

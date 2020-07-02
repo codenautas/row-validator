@@ -36,8 +36,20 @@ export type EstadoVariableNormales = 'actual'|'valida'|'todavia_no'|'calculada'|
 export type EstadoVariableErroneas = 'invalida'|'omitida'|'fuera_de_rango'|'fuera_de_flujo_por_omitida'|'fuera_de_flujo_por_salto'
 export type EstadoVariable = EstadoVariableNormales | EstadoVariableErroneas
 
+type Feedback<V extends string, FIN>={
+    estado:EstadoVariable
+    siguiente:V|FIN|null|undefined
+    apagada:boolean
+    inhabilitada:boolean
+    conDato:boolean
+    conProblema:boolean
+    pendiente:boolean|null
+}
+
 export type FormStructureState<V extends string, FIN> = {
     resumen:'vacio'|'con problemas'|'incompleto'|'ok'
+    feedbackResumen:Omit<Feedback<V,FIN>,'siguiente'|'apagada'|'inhabilitada'>
+    feedback:{[key in V]:Feedback<V,FIN>}
     estados:{[key in V]?:EstadoVariable}
     siguientes:{[key in V]?:V|FIN|null}
     actual:V|null
@@ -48,6 +60,7 @@ export type FormStructureState<V extends string, FIN> = {
 export interface RowValidatorSetup {
     getFuncionHabilitar:(name:string)=>((formData:RowData<string>)=>boolean)
     nsnrTipicos:{[k:string]: any}
+    multiEstado:boolean|null
 }
 
 export function getRowValidator(_setup:Partial<RowValidatorSetup>){
@@ -59,10 +72,17 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
             "-1":true,
             "-9":true,
         },
+        multiEstado:null,
         ..._setup
     };
     return function rowValidator<V extends string, FIN>(estructura:Structure<V, FIN>, formData:RowData<V>){
-        var rta:FormStructureState<V, FIN>={estados:{}, siguientes:{}, actual:null, primeraFalla:null, resumen:'vacio'};
+        var rta:FormStructureState<V, FIN>={
+            feedback:{} as FormStructureState<V, FIN>['feedback'], 
+            feedbackResumen:{} as Feedback<V,FIN>, 
+            estados:{}, 
+            siguientes:{}, 
+            actual:null, primeraFalla:null, resumen:'vacio'
+        };
         var respuestas=0;
         var problemas=0;        
         var variableAnterior=null;
@@ -70,40 +90,49 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
         var enSaltoAVariable=null; // null si no estoy saltando y el destino del salto si estoy dentro de un salto. 
         var conOmitida=false;  // para poner naranja
         var miVariable:V; // variable actual del ciclo
-        var falla=function(estado:EstadoVariable){
-            problemas++;
-            rta.estados[miVariable]=estado;
-            if(!rta.primeraFalla){
-                rta.primeraFalla=miVariable;
-            }
-        };
         for(miVariable in estructura.variables){
             let apagada:boolean=false;
-            var revisar_saltos_especiales= false;
+            const feedback={
+                conProblema:false,
+                inhabilitada:false,
+                pendiente:null,
+                apagada:false,
+            } as Feedback<V,FIN>;
+            var falla=function(estado:EstadoVariable){
+                problemas++;
+                feedback.conProblema=true;
+                feedback.estado=estado;
+                if(!rta.primeraFalla){
+                    rta.primeraFalla=miVariable;
+                }
+            };
+            var revisar_saltos_especiales=false;
             var valor=formData[miVariable];
             const estructuraVar = estructura.variables[miVariable];
+            feedback.conDato=valor!=null;
             if(estructuraVar.calculada){
                 apagada=true;
-                rta.estados[miVariable]='calculada';
+                feedback.estado='calculada';
             }else if(conOmitida){
                 falla('fuera_de_flujo_por_omitida');
             }else if(enSaltoAVariable && miVariable!=enSaltoAVariable){
                 apagada=true;
                 // estoy dentro de un salto válido, no debería haber datos ingresados.
                 if(valor == null || estructuraVar.libre){
-                    rta.estados[miVariable]='salteada';
+                    feedback.estado='salteada';
                 }else{
                     falla('fuera_de_flujo_por_salto');
                 }
             }else if(yaPasoLaActual){
                 if(valor == null || estructuraVar.libre){
-                    rta.estados[miVariable]='todavia_no';
+                    feedback.estado='todavia_no';
                 }else{
                     conOmitida=true;
                     if(!rta.primeraFalla){
                         rta.primeraFalla=rta.actual;
                     }
                     falla('fuera_de_flujo_por_omitida');
+                    feedback.conProblema=feedback.conDato;
                 }
             }else if(
                 /* caso 1 */
@@ -117,10 +146,11 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                 //   2) la expresión habilitar falla
                 apagada=true;
                 if(valor == null){
-                    rta.estados[miVariable]='salteada';
+                    feedback.estado='salteada';
                 }else{
                     falla('fuera_de_flujo_por_salto');
                 }
+                feedback.inhabilitada=true;
             }else{
                 // no estoy en una variable salteada y estoy dentro del flujo normal (no hubo omitidas hasta ahora). 
                 enSaltoAVariable=null; // si estaba en un salto acá se acaba
@@ -129,11 +159,12 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                         rta.primeraVacia=miVariable;
                     }
                     if(!estructuraVar.optativa){
-                        rta.estados[miVariable]='actual';
+                        feedback.estado='actual';
+                        feedback.pendiente=true;
                         rta.actual=miVariable;
                         yaPasoLaActual=miVariable!==null;
                     }else{
-                        rta.estados[miVariable]='optativa_sd';
+                        feedback.estado='optativa_sd';
                         if(estructuraVar.salto){
                             enSaltoAVariable=estructuraVar.salto;
                         }
@@ -142,16 +173,18 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                     respuestas++;
                     // hay algo ingresado hay que validarlo
                     if(setup.nsnrTipicos[valor]){
-                        rta.estados[miVariable]='valida';
+                        feedback.estado='valida';
                         if(estructuraVar.saltoNsNr){
                             enSaltoAVariable=estructuraVar.saltoNsNr;
                         }
+                        feedback.pendiente=false;
                     }else if(estructuraVar.tipo=='opciones'){
                         if(estructuraVar.opciones==null){
                             throw new Error('rowValidator error. Variable "'+miVariable+'" sin opciones')
                         }
                         if(estructuraVar.opciones[valor]){
-                            rta.estados[miVariable]='valida'; 
+                            feedback.estado='valida'; 
+                            feedback.pendiente=false;
                             if(estructuraVar.opciones[valor].salto){
                                 enSaltoAVariable=estructuraVar.opciones[valor].salto;
                             }
@@ -164,11 +197,13 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                             || estructuraVar.minimo != null && valor < estructuraVar.minimo){
                             falla('fuera_de_rango'); 
                         }else{
-                            rta.estados[miVariable]='valida'; 
+                            feedback.estado='valida'; 
+                            feedback.pendiente=false;
                         }
                     }else{
                         // las de texto o de ingreso libre son válidas si no se invalidaron antes por problemas de flujo
-                        rta.estados[miVariable]='valida'; 
+                        feedback.estado='valida'; 
+                        feedback.pendiente=false;
                     }
                     if(enSaltoAVariable==null && estructuraVar.salto){
                         enSaltoAVariable=estructuraVar.salto;
@@ -178,32 +213,54 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                 if (revisar_saltos_especiales){
                 }    
             }
-            if(rta.estados[miVariable]==null){
+            if(feedback.estado==null){
                 /* istanbul ignore next */
                 throw new Error('No se pudo validar la variable '+miVariable);
             }
-            if(!apagada){
+            if(apagada){
+                feedback.pendiente=false;
+            }else{
                 if(variableAnterior && !rta.siguientes[variableAnterior]){
-                    rta.siguientes[variableAnterior]=miVariable;
+                    rta.feedback[variableAnterior].siguiente=miVariable;
                 }
                 variableAnterior=miVariable;
             }
             if(!estructuraVar.calculada){
-                rta.siguientes[miVariable]=enSaltoAVariable; // es null si no hay salto (o sea sigue con la próxima o es la última)
+                feedback.siguiente=enSaltoAVariable; // es null si no hay salto (o sea sigue con la próxima o es la última)
             }else{
-                rta.siguientes[miVariable]=null;
+                feedback.siguiente=null;
             }
+            if(!feedback.inhabilitada && estructuraVar.funcionHabilitar 
+                && !setup.getFuncionHabilitar!(estructuraVar.funcionHabilitar)(formData)
+            ){
+                feedback.inhabilitada=true;
+            }
+            rta.feedback[miVariable]=feedback;
         }
-        if(conOmitida){
-            for(miVariable in rta.estados){
-                if(rta.estados[miVariable]=='actual'){
-                    rta.estados[miVariable]='omitida';
-                }else if(rta.estados[miVariable]=='todavia_no'){
-                    rta.estados[miVariable]='fuera_de_flujo_por_omitida';
-                }else if(rta.estados[miVariable]=='fuera_de_flujo_por_omitida'){
-                    break;
+        for(miVariable in estructura.variables){
+            let feedback=rta.feedback[miVariable];
+            if(conOmitida){
+                if(feedback.estado=='actual'){
+                    feedback.estado='omitida';
+                }else if(feedback.estado=='todavia_no'){
+                    feedback.estado='fuera_de_flujo_por_omitida';
                 }
             }
+            if(setup.multiEstado!==true){
+                rta.estados[miVariable]=feedback.estado;
+                rta.siguientes[miVariable]=feedback.siguiente;
+            }
+            if(feedback.estado=='todavia_no'){
+                if(feedback.inhabilitada){
+                    feedback.pendiente=false;
+                }else{
+                    feedback.pendiente=null;
+                }
+            }
+            rta.feedbackResumen.estado = rta.feedbackResumen.conProblema?rta.feedbackResumen.estado:feedback.estado;
+            rta.feedbackResumen.conDato = rta.feedbackResumen.conDato || feedback.conDato;
+            rta.feedbackResumen.conProblema = rta.feedbackResumen.conProblema || feedback.conProblema;
+            rta.feedbackResumen.pendiente = rta.feedbackResumen.pendiente || feedback.pendiente;
         }
         if(problemas){
             rta.resumen='con problemas';
@@ -217,6 +274,10 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
             }else{
                 rta.resumen='ok';
             }
+        }
+        if(setup.multiEstado===false){
+            delete rta.feedbackResumen;
+            delete rta.feedback;
         }
         return rta;
     }
