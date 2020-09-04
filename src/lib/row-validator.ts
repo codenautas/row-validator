@@ -84,6 +84,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
             actual:null, primeraFalla:null, resumen:'vacio'
         };
         var respuestas=0;
+        var libres=0;
         var problemas=0;        
         var variableAnterior=null;
         var yaPasoLaActual=false;  // si ya vi la variable "actual"
@@ -171,6 +172,9 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                     }
                 }else{
                     respuestas++;
+                    if(estructuraVar.libre){
+                        libres++;
+                    }
                     // hay algo ingresado hay que validarlo
                     if(setup.nsnrTipicos[valor]){
                         feedback.estado='valida';
@@ -266,7 +270,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
             rta.resumen='con problemas';
         }else{
             if(rta.actual){
-                if(respuestas){
+                if(respuestas>libres){
                     rta.resumen='incompleto';
                 }else{
                     rta.resumen='vacio';
@@ -276,7 +280,9 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
             }
         }
         if(setup.multiEstado===false){
+            // @ts-ignore
             delete rta.feedbackResumen;
+            // @ts-ignore
             delete rta.feedback;
         }
         return rta;

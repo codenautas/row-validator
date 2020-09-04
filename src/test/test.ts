@@ -774,6 +774,108 @@ describe('row-validator', function(){
             )
         })
     });
+    describe('libre la primera', function(){
+        var rowValidator = getRowValidatorSinMultiestado();
+        var simpleStruct:Structure<keyof SimpleRow>={
+            variables:{
+                v1:{tipo:'texto', libre:true},
+                v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}},
+                v3:{tipo:'numerico', minimo:0, maximo:98},
+                v4:{tipo:'texto'}
+            }
+        }
+        it("calcula un registro vacío con libre", async function(){
+            var rowVacia:SimpleRow = {v1:null, v2:null, v3:null, v4:null}
+            var state = await rowValidator(simpleStruct, rowVacia);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'vacio',
+                    estados:{v1:'actual', v2:'todavia_no', v3:'todavia_no', v4:'todavia_no'},
+                    siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                    actual:'v1',
+                    primeraVacia:'v1',
+                    primeraFalla:null,
+                }
+            )
+        })
+        it("calcula un registro cuasi vacío con libre", async function(){
+            var rowVacia:SimpleRow = {v1:'a', v2:null, v3:null, v4:null}
+            var state = await rowValidator(simpleStruct, rowVacia);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'vacio',
+                    estados:{v1:'valida', v2:'actual', v3:'todavia_no', v4:'todavia_no'},
+                    siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                    actual:'v2',
+                    primeraVacia:'v2',
+                    primeraFalla:null,
+                }
+            )
+        })
+        it("calcula una variable libre con omitida", async function(){
+            var row:SimpleRow = {v1:'A', v2:null, v3:1, v4:'B'}
+            var state = await rowValidator(simpleStruct, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'con problemas',
+                    estados:{v1:'valida', v2:'omitida', v3:'fuera_de_flujo_por_omitida', v4:'fuera_de_flujo_por_omitida'},
+                    siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                    actual:'v2',
+                    primeraVacia:'v2',
+                    primeraFalla:'v2',
+                }
+            )
+        })
+        /*
+        it("calcula una variable libre futura", async function(){
+            var row:SimpleRow = {v1:'A', v2:3, v3:1, v4:null}
+            var state = await rowValidator(simpleStruct, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'incompleto',
+                    estados:{v1:'valida', v2:'actual', v3:'todavia_no', v4:'todavia_no'},
+                    siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                    actual:'v2',
+                    primeraVacia:'v2',
+                    primeraFalla:null,
+                }
+            )
+        })
+        it("marca un salto", async function(){
+            var row:SimpleRow = {v1:'A', v2:1, v3:null, v4:null}
+            var state = await rowValidator(simpleStruct, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'incompleto',
+                    estados:{v1:'valida', v2:'valida', v3:'salteada', v4:'actual'},
+                    siguientes:{v1:'v2', v2:'v4', v3:'v4', v4:null},
+                    actual:'v4',
+                    primeraVacia:'v4',
+                    primeraFalla:null,
+                }
+            )
+        })
+        it("una salteada libre está marcada", async function(){
+            var row:SimpleRow = {v1:'A', v2:1, v3:1, v4:'B'}
+            var state = await rowValidator(simpleStruct, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'ok',
+                    estados:{v1:'valida', v2:'valida', v3:'salteada', v4:'valida'},
+                    siguientes:{v1:'v2', v2:'v4', v3:'v4', v4:null},
+                    actual:null,
+                    primeraFalla:null,
+                }
+            )
+        })
+        */
+    });
 });
 
 describe('row-validator setup', async function(){
