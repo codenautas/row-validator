@@ -6,6 +6,8 @@
 /* global describe */
 /* global it */
 
+import { strict as assert } from "assert";
+
 import * as discrepances from "discrepances";
 import { FormStructureState, getRowValidator, Structure, RowData } from "../lib/row-validator";
 
@@ -900,5 +902,149 @@ describe('row-validator setup', async function(){
         }catch(err){
             discrepances.showAndThrow(err,new Error("rowValidator error. Variable \"v1\" sin opciones"));
         }
+    })
+});
+
+describe('con filtros', function(){
+    let estructura:Structure<string> = {
+        variables:{
+            nombre:  { tipo: 'texto' },
+            sexo:    { tipo: 'opciones', opciones:{1:{}, 2:{}}},
+            edad:    { tipo: 'numero' },
+            filtro1: { tipo: 'filtro' , funcionHabilitar:'sexo == 2 and edad >= 14', salto:'salario'},
+            hijos:   { tipo: 'numero' },
+            salario: { tipo: 'numero '}
+        }
+    }
+    let estructura2:Structure<string> = {
+        variables:{
+            nombre:  { tipo: 'texto' },
+            sexo:    { tipo: 'opciones', opciones:{1:{}, 2:{}}},
+            edad:    { tipo: 'numero' },
+            autoresp:{ tipo: 'opciones', opciones:{1:{}, 2:{salto:true}}}, // si no es autorespondente fin de cuestionario
+            filtro1: { tipo: 'filtro' , funcionHabilitar:'sexo == 2 and edad >= 14', salto:'salario'},
+            hijos:   { tipo: 'numero' },
+            salario: { tipo: 'numero '}
+        }
+    }
+    let rowValidator = getRowValidator({
+        getFuncionHabilitar(name:string){
+            var tablaFunciones: {[exp in string]: (row:{[x in string]:any})=>boolean } = {
+                'sexo == 2 and edad >= 14': function(row){ return row.sexo == 2 && row.edad >= 14; }
+            };
+            return tablaFunciones[name];
+        }
+    })
+    it("row vacío", ()=>{
+        let row = { nombre:null, sexo:null, edad:null, hijos:null, salario:null };
+        let {feedbackResumen, feedback, ...obtained} = rowValidator(estructura, row);
+        discrepances.showAndThrow(
+            obtained,
+            {
+                resumen:'vacio',
+                estados:{ nombre:'actual', sexo:'todavia_no', edad:'todavia_no', filtro1:'todavia_no', hijos:'todavia_no', salario:'todavia_no' },
+                siguientes:{ nombre:'sexo', sexo:'edad', edad:'hijos', filtro1:null /* preferimos 'hijos'*/, hijos:'salario', salario:null },
+                actual:'nombre',
+                primeraVacia:'nombre',
+                primeraFalla:null,
+            }
+        )
+    })
+    it("row llena mujer adulta", ()=>{
+        let row = { nombre:'Adela', sexo:2, edad:22, hijos:1, salario:50000 };
+        let {feedbackResumen, feedback, ...obtained} = rowValidator(estructura, row);
+        discrepances.showAndThrow(
+            obtained,
+            {
+                resumen:'ok',
+                estados:{ nombre:'valida', sexo:'valida', edad:'valida', filtro1:'valida', hijos:'valida', salario:'valida' },
+                siguientes:{ nombre:'sexo', sexo:'edad', edad:'hijos', filtro1:null /* preferimos 'hijos'*/, hijos:'salario', salario:null },
+                actual:null,
+                primeraFalla:null,
+            }
+        )
+    })
+    it("row llena mujer adulta no informa hijos", ()=>{
+        let row = { nombre:'Adela', sexo:2, edad:22, hijos:null, salario:50000 };
+        let {feedbackResumen, feedback, ...obtained} = rowValidator(estructura, row);
+        let expected: typeof obtained = {
+            resumen:'con problemas',
+            estados:{ nombre:'valida', sexo:'valida', edad:'valida', filtro1:'valida', hijos:'omitida', salario:'fuera_de_flujo_por_omitida' },
+            siguientes:{ nombre:'sexo', sexo:'edad', edad:'hijos', filtro1:null /* preferimos 'hijos'*/, hijos:'salario', salario:null },
+            actual:'hijos',
+            primeraVacia:'hijos',
+            primeraFalla:'hijos',
+        }
+        assert.deepEqual(obtained, expected);
+        discrepances.showAndThrow(
+            obtained,
+            expected
+        )
+    })
+    it("row llena mujer adulta sin hijos", ()=>{
+        let row = { nombre:'Adela', sexo:2, edad:22, hijos:0, salario:50000 };
+        let {feedbackResumen, feedback, ...obtained} = rowValidator(estructura, row);
+        let expected: typeof obtained = {
+            resumen:'ok',
+            estados:{ nombre:'valida', sexo:'valida', edad:'valida', filtro1:'valida', hijos:'valida', salario:'valida' },
+            siguientes:{ nombre:'sexo', sexo:'edad', edad:'hijos', filtro1:null /* preferimos 'hijos'*/, hijos:'salario', salario:null },
+            actual:null,
+            primeraFalla:null,
+        }
+        assert.deepEqual(obtained, expected);
+        discrepances.showAndThrow(
+            obtained,
+            expected
+        )
+    })
+    it("row hombre incompleto", ()=>{
+        let row = { nombre:'Abelardo', sexo:1, edad:22, hijos:null, salario:null };
+        let {feedbackResumen, feedback, ...obtained} = rowValidator(estructura, row);
+        let expected: typeof obtained = {
+            resumen:'incompleto',
+            estados:{ nombre:'valida', sexo:'valida', edad:'valida', filtro1:'salteada', hijos:'salteada', salario:'actual' },
+            siguientes:{ nombre:'sexo', sexo:'edad', edad:'salario', filtro1:'salario', hijos:'salario', salario:null },
+            actual:'salario',
+            primeraVacia:'salario',
+            primeraFalla:null,
+        };
+        assert.deepEqual(obtained, expected);
+        discrepances.showAndThrow(
+            obtained,
+            expected  
+        )
+    })
+    it("row mujer menor con hijos", ()=>{
+        let row = { nombre:'Abelardo', sexo:2, edad:12, hijos:1, salario:null };
+        let {feedbackResumen, feedback, ...obtained} = rowValidator(estructura, row);
+        let expected: typeof obtained = {
+            resumen:'con problemas',
+            estados:{ nombre:'valida', sexo:'valida', edad:'valida', filtro1:'salteada', hijos:'fuera_de_flujo_por_salto', salario:'actual' },
+            siguientes:{ nombre:'sexo', sexo:'edad', edad:'salario', filtro1:'salario', hijos:'salario', salario:null },
+            actual:'salario',
+            primeraVacia:'salario',
+            primeraFalla:'hijos',
+        };
+        assert.deepEqual(obtained, expected);
+        discrepances.showAndThrow(
+            obtained,
+            expected  
+        )
+    })
+    it("row salto el filtro", ()=>{
+        let row = { nombre:'Aaron', sexo:1, edad:25, autoresp:2, hijos:null, salario:null };
+        let {feedbackResumen, feedback, ...obtained} = rowValidator(estructura2, row);
+        let expected: typeof obtained = {
+            resumen:'ok',
+            estados:{ nombre:'valida', sexo:'valida', edad:'valida', autoresp:'valida', filtro1:'salteada', hijos:'salteada', salario:'salteada' },
+            siguientes:{ nombre:'sexo', sexo:'edad', edad:'autoresp', autoresp:true,  filtro1:true, hijos:true, salario:true },
+            actual:null,
+            primeraFalla:null,
+        };
+        assert.deepEqual(obtained, expected);
+        discrepances.showAndThrow(
+            obtained,
+            expected  
+        )
     })
 });

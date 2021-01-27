@@ -140,7 +140,8 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                 estructuraVar.subordinadaVar!=null 
                     && formData[estructuraVar.subordinadaVar]!=estructuraVar.subordinadaValor 
                 || /* caso 2*/
-                estructuraVar.funcionHabilitar 
+                estructuraVar.tipo != 'filtro' 
+                    && estructuraVar.funcionHabilitar 
                     && !setup.getFuncionHabilitar!(estructuraVar.funcionHabilitar)(formData)
             ){  // la variable está inhabilitada ya sea por:
                 //   1) está subordinada y no es el valor que la activa
@@ -156,18 +157,33 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                 // no estoy en una variable salteada y estoy dentro del flujo normal (no hubo omitidas hasta ahora). 
                 enSaltoAVariable=null; // si estaba en un salto acá se acaba
                 if(valor == null){
-                    if(!rta.primeraVacia){
-                        rta.primeraVacia=miVariable;
-                    }
-                    if(!estructuraVar.optativa){
-                        feedback.estado='actual';
-                        feedback.pendiente=true;
-                        rta.actual=miVariable;
-                        yaPasoLaActual=miVariable!==null;
+                    if(estructuraVar.tipo=='filtro'){
+                        if(yaPasoLaActual){
+                            feedback.estado='todavia_no';
+                        }else{
+                            // hay que calcular si el filtro salta
+                            let habilitado = estructuraVar.funcionHabilitar != null && setup.getFuncionHabilitar!(estructuraVar.funcionHabilitar)(formData)
+                            if(habilitado){
+                                feedback.estado='valida';
+                            }else{
+                                enSaltoAVariable=estructuraVar.salto;
+                                feedback.estado='salteada';
+                            }
+                        }
                     }else{
-                        feedback.estado='optativa_sd';
-                        if(estructuraVar.salto){
-                            enSaltoAVariable=estructuraVar.salto;
+                        if(!rta.primeraVacia){
+                            rta.primeraVacia=miVariable;
+                        }
+                        if(!estructuraVar.optativa){
+                            feedback.estado='actual';
+                            feedback.pendiente=true;
+                            rta.actual=miVariable;
+                            yaPasoLaActual=miVariable!==null;
+                        }else{
+                            feedback.estado='optativa_sd';
+                            if(estructuraVar.salto){
+                                enSaltoAVariable=estructuraVar.salto;
+                            }
                         }
                     }
                 }else{
@@ -223,7 +239,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
             }
             if(apagada){
                 feedback.pendiente=false;
-            }else{
+            }else if(estructuraVar.tipo!='filtro'){
                 if(variableAnterior && !rta.siguientes[variableAnterior]){
                     rta.feedback[variableAnterior].siguiente=miVariable;
                 }
