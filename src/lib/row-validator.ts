@@ -91,6 +91,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
         var enSaltoAVariable=null; // null si no estoy saltando y el destino del salto si estoy dentro de un salto. 
         var conOmitida=false;  // para poner naranja
         var miVariable:V; // variable actual del ciclo
+        var variableOrigenSalto:V|null = null;
         for(miVariable in estructura.variables){
             let apagada:boolean=false;
             const feedback={
@@ -116,7 +117,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                 feedback.estado='calculada';
             }else if(conOmitida){
                 falla('fuera_de_flujo_por_omitida');
-            }else if(enSaltoAVariable && miVariable!=enSaltoAVariable){
+            }else if(enSaltoAVariable && miVariable!=enSaltoAVariable && (estructuraVar.subordinadaVar != variableOrigenSalto || estructuraVar.subordinadaValor != formData[variableOrigenSalto!])){
                 apagada=true;
                 // estoy dentro de un salto válido, no debería haber datos ingresados.
                 if(valor == null || estructuraVar.libre){
@@ -168,6 +169,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                             }else{
                                 enSaltoAVariable=estructuraVar.salto;
                                 feedback.estado='salteada';
+                                variableOrigenSalto = miVariable;
                             }
                         }
                     }else{
@@ -183,6 +185,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                             feedback.estado='optativa_sd';
                             if(estructuraVar.salto){
                                 enSaltoAVariable=estructuraVar.salto;
+                                variableOrigenSalto = miVariable;
                             }
                         }
                     }
@@ -196,6 +199,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                         feedback.estado='valida';
                         if(estructuraVar.saltoNsNr){
                             enSaltoAVariable=estructuraVar.saltoNsNr;
+                            variableOrigenSalto = miVariable;
                         }
                         feedback.pendiente=false;
                     }else if(estructuraVar.tipo=='opciones'){
@@ -207,6 +211,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                             feedback.pendiente=false;
                             if(estructuraVar.opciones[valor].salto){
                                 enSaltoAVariable=estructuraVar.opciones[valor].salto;
+                                variableOrigenSalto = miVariable;
                             }
                         }else{
                             falla('invalida'); 
@@ -227,6 +232,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                     }
                     if(enSaltoAVariable==null && estructuraVar.salto){
                         enSaltoAVariable=estructuraVar.salto;
+                        variableOrigenSalto = miVariable;
                     }
                     revisar_saltos_especiales=true;
                 }

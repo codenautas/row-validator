@@ -212,7 +212,7 @@ describe('row-validator', function(){
                 v4:{tipo:'texto'}
             }
         }
-        it("completa salvo la subordinada", async function(){
+        it("completa, la subordinada no corresponde", async function(){
             var row:RowConSubordinadas = {v1:'A', v2:2, v2_esp:null, v3:1, v4:'B'}
             var state = await rowValidator(conSubordinadaStruct, row);
             discrepances.showAndThrow(
@@ -226,6 +226,21 @@ describe('row-validator', function(){
                 }
             )
         })
+        it("completa falta la subordinada", async function(){
+            var row:RowConSubordinadas = {v1:'A', v2:3, v2_esp:null, v3:1, v4:'B'}
+            var state = await rowValidator(conSubordinadaStruct, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'con problemas',
+                    estados:{v1:'valida', v2:'valida', v2_esp:'omitida', v3:'fuera_de_flujo_por_omitida', v4:'fuera_de_flujo_por_omitida'},
+                    siguientes:{v1:'v2', v2:'v2_esp', v2_esp:'v3', v3:'v4', v4:null},
+                    actual:'v2_esp',
+                    primeraVacia:'v2_esp',
+                    primeraFalla:'v2_esp',
+                }
+            )
+        })
         it("la subordinada está marcada de más", async function(){
             var row:RowConSubordinadas = {v1:'A', v2:2, v2_esp:'X', v3:1, v4:'B'}
             var state = await rowValidator(conSubordinadaStruct, row);
@@ -235,6 +250,60 @@ describe('row-validator', function(){
                     resumen:'con problemas',
                     estados:{v1:'valida', v2:'valida', v2_esp:'fuera_de_flujo_por_salto', v3:'valida', v4:'valida'},
                     siguientes:{v1:'v2', v2:'v3', v2_esp:null, v3:'v4', v4:null},
+                    actual:null,
+                    primeraFalla:'v2_esp',
+                }
+            )
+        })
+    })
+    describe("variables subordinadas en pregunta con salto incondicional", async function(){
+        var conSubordinadaStruct:Structure<keyof RowConSubordinadas>={
+            variables:{
+                v1:{tipo:'texto'},
+                v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}, 3:{}}, salto:'v4'},
+                v2_esp:{tipo:'texto', subordinadaVar:'v2', subordinadaValor:3},
+                v3:{tipo:'numerico'},
+                v4:{tipo:'texto'}
+            }
+        }
+        it("completa, la subordinada no corresponde", async function(){
+            var row:RowConSubordinadas = {v1:'A', v2:2, v2_esp:null, v3:null, v4:'B'}
+            var state = await rowValidator(conSubordinadaStruct, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'ok',
+                    estados:{v1:'valida', v2:'valida', v2_esp:'salteada', v3:'salteada', v4:'valida'},
+                    siguientes:{v1:'v2', v2:'v4', v2_esp:'v4', v3:'v4', v4:null},
+                    actual:null,
+                    primeraFalla:null,
+                }
+            )
+        })
+        it("completa falta la subordinada", async function(){
+            var row:RowConSubordinadas = {v1:'A', v2:3, v2_esp:null, v3:1, v4:'B'}
+            var state = await rowValidator(conSubordinadaStruct, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'con problemas',
+                    estados:{v1:'valida', v2:'valida', v2_esp:'omitida', v3:'fuera_de_flujo_por_omitida', v4:'fuera_de_flujo_por_omitida'},
+                    siguientes:{v1:'v2', v2:'v2_esp', v2_esp:'v3', v3:'v4', v4:null},
+                    actual:'v2_esp',
+                    primeraVacia:'v2_esp',
+                    primeraFalla:'v2_esp',
+                }
+            )
+        })
+        it("la subordinada está marcada de más", async function(){
+            var row:RowConSubordinadas = {v1:'A', v2:2, v2_esp:'X', v3:null, v4:'B'}
+            var state = await rowValidator(conSubordinadaStruct, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'con problemas',
+                    estados:{v1:'valida', v2:'valida', v2_esp:'fuera_de_flujo_por_salto', v3:'salteada', v4:'valida'},
+                    siguientes:{v1:'v2', v2:'v4', v2_esp:'v4', v3:'v4', v4:null},
                     actual:null,
                     primeraFalla:'v2_esp',
                 }
@@ -746,6 +815,21 @@ describe('row-validator', function(){
                 }
             )
         })
+        it("calcula una variable libre actual", async function(){
+            var row:SimpleRow = {v1:'A', v2:2, v3:null, v4:null}
+            var state = await rowValidator(simpleStruct, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'incompleto',
+                    estados:{v1:'valida', v2:'valida', v3:'actual', v4:'todavia_no'},
+                    siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                    actual:'v3',
+                    primeraVacia:'v3',
+                    primeraFalla:null,
+                }
+            )
+        })
         it("marca un salto", async function(){
             var row:SimpleRow = {v1:'A', v2:1, v3:null, v4:null}
             var state = await rowValidator(simpleStruct, row);
@@ -772,6 +856,47 @@ describe('row-validator', function(){
                     siguientes:{v1:'v2', v2:'v4', v3:'v4', v4:null},
                     actual:null,
                     primeraFalla:null,
+                }
+            )
+        })
+        it("falta una libre no optativa", async function(){
+            var row:SimpleRow = {v1:'A', v2:2, v3:null, v4:'B'}
+            var state = await rowValidator(simpleStruct, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'con problemas',
+                    estados:{v1:'valida', v2:'valida', v3:'omitida', v4:'fuera_de_flujo_por_omitida'},
+                    siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                    actual:'v3',
+                    primeraFalla:'v3',
+                    primeraVacia:'v3'
+                }
+            )
+        })
+    });
+    describe('libre optativa', function(){
+        var rowValidator = getRowValidatorSinMultiestado();
+        var simpleStruct:Structure<keyof SimpleRow>={
+            variables:{
+                v1:{tipo:'texto'},
+                v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}},
+                v3:{tipo:'numerico', minimo:0, maximo:98, libre:true, optativa:true},
+                v4:{tipo:'texto'}
+            }
+        }
+        it("falta una libre optativa", async function(){
+            var row:SimpleRow = {v1:'A', v2:2, v3:null, v4:'B'}
+            var state = await rowValidator(simpleStruct, row);
+            discrepances.showAndThrow(
+                state,
+                {
+                    resumen:'ok',
+                    estados:{v1:'valida', v2:'valida', v3:'optativa_sd', v4:'valida'},
+                    siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                    actual:null,
+                    primeraFalla:null,
+                    primeraVacia:'v3'
                 }
             )
         })
@@ -831,52 +956,6 @@ describe('row-validator', function(){
                 }
             )
         })
-        /*
-        it("calcula una variable libre futura", async function(){
-            var row:SimpleRow = {v1:'A', v2:3, v3:1, v4:null}
-            var state = await rowValidator(simpleStruct, row);
-            discrepances.showAndThrow(
-                state,
-                {
-                    resumen:'incompleto',
-                    estados:{v1:'valida', v2:'actual', v3:'todavia_no', v4:'todavia_no'},
-                    siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
-                    actual:'v2',
-                    primeraVacia:'v2',
-                    primeraFalla:null,
-                }
-            )
-        })
-        it("marca un salto", async function(){
-            var row:SimpleRow = {v1:'A', v2:1, v3:null, v4:null}
-            var state = await rowValidator(simpleStruct, row);
-            discrepances.showAndThrow(
-                state,
-                {
-                    resumen:'incompleto',
-                    estados:{v1:'valida', v2:'valida', v3:'salteada', v4:'actual'},
-                    siguientes:{v1:'v2', v2:'v4', v3:'v4', v4:null},
-                    actual:'v4',
-                    primeraVacia:'v4',
-                    primeraFalla:null,
-                }
-            )
-        })
-        it("una salteada libre está marcada", async function(){
-            var row:SimpleRow = {v1:'A', v2:1, v3:1, v4:'B'}
-            var state = await rowValidator(simpleStruct, row);
-            discrepances.showAndThrow(
-                state,
-                {
-                    resumen:'ok',
-                    estados:{v1:'valida', v2:'valida', v3:'salteada', v4:'valida'},
-                    siguientes:{v1:'v2', v2:'v4', v3:'v4', v4:null},
-                    actual:null,
-                    primeraFalla:null,
-                }
-            )
-        })
-        */
     });
 });
 
