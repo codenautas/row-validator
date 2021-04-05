@@ -9,16 +9,19 @@
 import { strict as assert } from "assert";
 
 import * as discrepances from "discrepances";
-import { FormStructureState, getRowValidator, Structure, RowData } from "../lib/row-validator";
+import { FormStructureState, getRowValidator, Structure, RowData, OpcionesRowValidator } from "../lib/row-validator";
+
+import * as bestGlobals from "best-globals";
 
 type SimpleRow={v1:string|null, v2:number|null, v3:number|null, v4:string|null}
+type DatedRow={v1:string|null, v2:number|null, v3:Date|null, v4:string|null}
 type RowConSubordinadas=SimpleRow & {v2_esp:string|null}
 type DesordenRow=SimpleRow & {v9:number|null, v11:number|null}
 
-function getRowValidatorSinMultiestado(){
-    var rowValidatorInterno = getRowValidator({multiEstado:false});
-    return <V extends string, FIN>(estructura: Structure<V, FIN, string>, formData: RowData<V>):Omit<FormStructureState<V, FIN>,'feedback'|'feedbackResumen'> => {
-        return rowValidatorInterno(estructura,formData);
+function getRowValidatorSinMultiestado(opts?:any){
+    var rowValidatorInterno = getRowValidator({multiEstado:false, ...opts});
+    return <V extends string, FIN>(estructura: Structure<V, FIN, string>, formData: RowData<V>, opts?:OpcionesRowValidator):Omit<FormStructureState<V, FIN>,'feedback'|'feedbackResumen'> => {
+        return rowValidatorInterno(estructura,formData,opts);
     }
    
 }
@@ -1124,6 +1127,109 @@ describe('con filtros', function(){
         discrepances.showAndThrow(
             obtained,
             expected  
+        )
+    })
+});
+
+
+describe('row-validator autoing', function(){
+    var getFuncionValorar=(nombre:string)=>{
+        switch(nombre){
+            case 'v2=3,currDate':
+                return (formData:RowData<string>) => formData.v2==3 ? bestGlobals.date.today() : null;
+            default:
+                throw new Error('no encontrado')
+        }
+    };
+    var rowValidator = getRowValidatorSinMultiestado({
+        getFuncionValorar
+    });
+    var simpleStruct:Structure<keyof SimpleRow>={
+        variables:{
+            v1:{tipo:'texto'},
+            v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}, 3:{}}},
+            v3:{tipo:'fecha', minimo:0, maximo:98, funcionAutoIngresar:'v2=3,currDate'},
+            v4:{tipo:'texto'}
+        }
+    }
+    it("sin auto ingreso, no se cumple la precondición", async function(){
+        var row:SimpleRow = {v1:'ok', v2:2, v3:null, v4:null}
+        var state = await rowValidator(simpleStruct, row, {autoIngreso:true});
+        discrepances.showAndThrow(
+            state,
+            {
+                resumen:'incompleto',
+                estados:{v1:'valida', v2:'valida', v3:'actual', v4:'todavia_no'},
+                siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                actual:'v3',
+                primeraVacia:'v3',
+                primeraFalla:null,
+                autoIngresadas:{}
+            }
+        )
+        discrepances.showAndThrow(
+            row,
+            {v1:'ok', v2:2, v3:null, v4:null}
+        )
+    })
+    it("con auto ingreso, es la actual", async function(){
+        var hoy = bestGlobals.date.today();
+        var row:DatedRow = {v1:'ok', v2:3, v3:null, v4:null}
+        var state = await rowValidator(simpleStruct, row, {autoIngreso:true});
+        discrepances.showAndThrow(
+            state,
+            {
+                resumen:'incompleto',
+                estados:{v1:'valida', v2:'valida', v3:'actual', v4:'todavia_no'},
+                siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                actual:'v3',
+                primeraVacia:'v3',
+                primeraFalla:null,
+                autoIngresadas:{v3:hoy}
+            }
+        )
+        discrepances.showAndThrow(
+            row,
+            {v1:'ok', v2:3, v3:null, v4:null}
+        )
+    })
+    it("sin auto ingreso, es la actual pero no está la opción", async function(){
+        var row:DatedRow = {v1:'ok', v2:2, v3:null, v4:null}
+        var state = await rowValidator(simpleStruct, row);
+        discrepances.showAndThrow(
+            state,
+            {
+                resumen:'incompleto',
+                estados:{v1:'valida', v2:'valida', v3:'actual', v4:'todavia_no'},
+                siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                actual:'v3',
+                primeraVacia:'v3',
+                primeraFalla:null
+            }
+        )
+        discrepances.showAndThrow(
+            row,
+            {v1:'ok', v2:2, v3:null, v4:null}
+        )
+    })
+    it("con auto ingreso, está omitida", async function(){
+        var row:DatedRow = {v1:'ok', v2:2, v3:null, v4:'pasada'}
+        var state = await rowValidator(simpleStruct, row, {autoIngreso:true});
+        discrepances.showAndThrow(
+            state,
+            {
+                resumen:'con problemas',
+                estados:{v1:'valida', v2:'valida', v3:'omitida', v4:'fuera_de_flujo_por_omitida'},
+                siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                actual:'v3',
+                primeraVacia:'v3',
+                primeraFalla:'v3',
+                autoIngresadas:{}
+            }
+        )
+        discrepances.showAndThrow(
+            row,
+            {v1:'ok', v2:2, v3:null, v4:'pasada'}
         )
     })
 });

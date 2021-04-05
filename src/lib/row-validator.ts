@@ -20,6 +20,7 @@ export interface Variable<V, FH, FIN>{
     calculada?:boolean|null     // Si la variable es calculada (no ingresada)
     funcionHabilitar?:FH|null   // Determina la habilitación dinámica
     libre?:boolean|null         // Posibilidad de ingresarla aunque esté salteada
+    funcionAutoIngresar?:FH|null // Determina un cálculo para el valor inicial de una variable que se muestra al ser actual
 }
 
 export interface Structure<V extends string, FIN = true, FH extends string = string>{
@@ -55,18 +56,27 @@ export type FormStructureState<V extends string, FIN> = {
     actual:V|null
     primeraVacia?:V|null
     primeraFalla:V|null
+    autoIngresadas?:Partial<{[v in V]: any}>
 };
 
 export interface RowValidatorSetup {
     getFuncionHabilitar:(name:string)=>((formData:RowData<string>)=>boolean)
+    getFuncionValorar: (name: string) => ((formData: RowData<string>) => any | null)
     nsnrTipicos:{[k:string]: any}
     multiEstado:boolean|null
+}
+
+export type OpcionesRowValidator={
+    autoIngreso?: boolean
 }
 
 export function getRowValidator(_setup:Partial<RowValidatorSetup>){
     var setup:RowValidatorSetup={
         getFuncionHabilitar:(nombre:string)=>{
             throw new Error('rowValidator error. No existe la funcion habilitadora '+nombre);
+        },
+        getFuncionValorar:(nombre:string)=>{
+            throw new Error('rowValidator error. No existe la funcion valoradora '+nombre);
         },
         nsnrTipicos:{
             "-1":true,
@@ -75,7 +85,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
         multiEstado:null,
         ..._setup
     };
-    return function rowValidator<V extends string, FIN>(estructura:Structure<V, FIN>, formData:RowData<V>){
+    return function rowValidator<V extends string, FIN>(estructura:Structure<V, FIN>, formData:RowData<V>, opts?:OpcionesRowValidator){
         var rta:FormStructureState<V, FIN>={
             feedback:{} as FormStructureState<V, FIN>['feedback'], 
             feedbackResumen:{} as Feedback<V,FIN>, 
@@ -83,6 +93,9 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
             siguientes:{}, 
             actual:null, primeraFalla:null, resumen:'vacio'
         };
+        if(opts && opts?.autoIngreso){
+            rta.autoIngresadas = {}
+        }
         var respuestas=0;
         var libres=0;
         var problemas=0;        
@@ -175,6 +188,12 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                     }else{
                         if(!rta.primeraVacia){
                             rta.primeraVacia=miVariable;
+                        }
+                        if(opts && opts.autoIngreso && estructuraVar.funcionAutoIngresar){
+                            let nuevoValor = setup.getFuncionValorar!(estructuraVar.funcionAutoIngresar)(formData);
+                            if(nuevoValor != null){
+                                rta.autoIngresadas![miVariable] = nuevoValor;
+                            }
                         }
                         if(!estructuraVar.optativa){
                             feedback.estado='actual';
