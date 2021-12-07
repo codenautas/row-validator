@@ -8,7 +8,6 @@ Especialmente diseñado para encuestas
 [![downloads](https://img.shields.io/npm/dm/row-validator.svg)](https://npmjs.org/package/row-validator)
 [![Node.js CI](https://github.com/codenautas/row-validator/workflows/Node.js%20CI/badge.svg)](https://github.com/codenautas/row-validator/actions?query=workflow%3A%22Node.js+CI%22)
 [![Coverage Status](https://coveralls.io/repos/github/codenautas/row-validator/badge.svg?branch=master)](https://coveralls.io/github/codenautas/row-validator?branch=master)
-[![dependencies](https://img.shields.io/david/codenautas/row-validator.svg)](https://david-dm.org/codenautas/row-validator)
 
 
 # Estructura
@@ -47,6 +46,7 @@ type SimpleRow={v1:string|null, v2:number|null, v3:number|null, v4:string|null}
 
 var rowValidator = getRowValidator({});
 var simpleStruct:Structure<keyof SimpleRow>={
+    marcaFin:'FIN',
     variables:{
         v1:{tipo:'texto'},
         v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}},
