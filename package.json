@@ -41,25 +41,14 @@
   "scripts": {
     "tsc": "tsc",
     "test": "mocha --reporter spec --bail --check-leaks --exit work/test/",
-    "test-ci": "node node_modules/nyc/bin/nyc --reporter=lcov --reporter=text-lcov node_modules/mocha/bin/_mocha --exit --check-leaks work/test/*.js",
     "test-cov": "tsc -p tsconfig-test.json && node node_modules/nyc/bin/nyc node_modules/mocha/bin/_mocha --exit --check-leaks work/test/*.js",
     "prepare": "tsc -p tsconfig-lib.json && tsc -p tsconfig-test.json",
     "watch:buildT": "tsc --watch -p tsconfig-test.json",
     "build-ignore-err": "(tsc -p tsconfig-lib.json || echo \"continue w/error\") && (tsc -p tsconfig-test.json  || echo \"continue w/error\")"
   },
-  "nyc": {
-    "extension": [
-      ".js"
-    ],
-    "exclude": [
-      "**/*.d.ts",
+  "nyc":{
+    "exclude":[
       "src/test"
-    ],
-    "include": [
-      "work/lib/*.js"
-    ],
-    "x-require": [
-      "ts-node/register"
     ],
     "reporter": [
       "html",
@@ -68,7 +57,6 @@
     ],
     "sourceMap": true,
     "instrument": true,
-    "all": true,
     "check-coverage": true
   },
   "qa-control": {

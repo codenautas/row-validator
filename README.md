@@ -6,8 +6,9 @@ Especialmente diseñado para encuestas
 ![extending](https://img.shields.io/badge/stability-extending-orange.svg)
 [![npm-version](https://img.shields.io/npm/v/row-validator.svg)](https://npmjs.org/package/row-validator)
 [![downloads](https://img.shields.io/npm/dm/row-validator.svg)](https://npmjs.org/package/row-validator)
-[![Node.js CI](https://github.com/codenautas/row-validator/workflows/Node.js%20CI/badge.svg)](https://github.com/codenautas/row-validator/actions?query=workflow%3A%22Node.js+CI%22)
-[![Coverage Status](https://coveralls.io/repos/github/codenautas/row-validator/badge.svg?branch=master)](https://coveralls.io/github/codenautas/row-validator?branch=master)
+[![build](https://github.com/codenautas/actions/workflows/node.js.yml/badge.svg)](https://github.com/codenautas/row-validator/actions/workflows/node.js.yml)
+[![coverage](https://coveralls.io/repos/github/codenautas/row-validator/badge.svg)](https://coveralls.io/github/codenautas/row-validator)
+[![outdated-deps](https://img.shields.io/github/issues-search/codenautas/row-validator?color=9cf&label=outdated-deps&query=is%3Apr%20author%3Aapp%2Fdependabot%20is%3Aopen)](https://github.com/codenautas/row-validator/pulls/app%2Fdependabot)
 
 
 # Estructura
