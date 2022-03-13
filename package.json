@@ -57,7 +57,11 @@
     ],
     "sourceMap": true,
     "instrument": true,
-    "check-coverage": true
+    "check-coverage": true,
+    "statements":100,
+    "branches":100,
+    "functions":100,
+    "lines":100
   },
   "qa-control": {
     "package-version": "0.3.0",

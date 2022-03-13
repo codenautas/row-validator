@@ -93,7 +93,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
             siguientes:{}, 
             actual:null, primeraFalla:null, resumen:'vacio'
         };
-        if(opts && opts?.autoIngreso){
+        if(opts?.autoIngreso){
             rta.autoIngresadas = {}
         }
         var respuestas=0;
@@ -172,6 +172,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                 enSaltoAVariable=null; // si estaba en un salto acá se acaba
                 if(valor == null){
                     if(estructuraVar.tipo=='filtro'){
+                        /* istanbul ignore if */
                         if(yaPasoLaActual){
                             feedback.estado='todavia_no';
                         }else{
@@ -258,8 +259,8 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                 if (revisar_saltos_especiales){
                 }    
             }
+            /* istanbul ignore next */
             if(feedback.estado==null){
-                /* istanbul ignore next */
                 throw new Error('No se pudo validar la variable '+miVariable);
             }
             if(apagada){

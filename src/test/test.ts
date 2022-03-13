@@ -127,6 +127,21 @@ describe('row-validator', function(){
             }
         )
     })
+    it("opcion invalida y omitida", async function(){
+        var row:SimpleRow = {v1:'A', v2:15, v3:null, v4:'t'}
+        var state = await rowValidator(simpleStruct, row);
+        discrepances.showAndThrow(
+            state,
+            {
+                resumen:'con problemas',
+                estados:{v1:'valida', v2:'invalida', v3:'omitida', v4:'fuera_de_flujo_por_omitida'},
+                siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                actual:'v3',
+                primeraVacia:'v3',
+                primeraFalla:'v2',
+            }
+        )
+    })
     it("sobre máximo", async function(){
         var row:SimpleRow = {v1:'A', v2:2, v3:99, v4:null}
         var state = await rowValidator(simpleStruct, row);
@@ -500,12 +515,38 @@ describe('row-validator', function(){
                             v4:{estado:'actual'                  , siguiente:null, conDato:false, conProblema:false, pendiente:true ,apagada:false,inhabilitada:false,},
                         },
                         feedbackResumen:{estado:'fuera_de_flujo_por_salto', conDato:true, conProblema:true, pendiente:true},
-                         estados:{v1:'valida', v2:'salteada', v3:'fuera_de_flujo_por_salto', v4:'actual'},
+                        estados:{v1:'valida', v2:'salteada', v3:'fuera_de_flujo_por_salto', v4:'actual'},
                         siguientes:{v1:'v4', v2:NULL('v4'), v3:NULL('v4'), v4:null},
                         actual:'v4',
                         primeraVacia:'v4',
                         primeraFalla:'v3',
                     }
+                )
+            })
+            it("una salteada está marcada multiestado = true", async function(){
+                var rowValidator = getRowValidator({
+                    getFuncionHabilitar,
+                    multiEstado:true, 
+                });
+                var row:SimpleRow = {v1:'A', v2:null, v3:1, v4:null}
+                var state = await rowValidator(simpleStruct, row);
+                discrepances.showAndThrow(
+                    state,
+                    {
+                        resumen:'con problemas',
+                        feedback:{
+                            v1:{estado:'valida'                  , siguiente:'v4', conDato:true , conProblema:false, pendiente:false,apagada:false,inhabilitada:false,},
+                            v2:{estado:'salteada'                , siguiente:null, conDato:false, conProblema:false, pendiente:false,apagada:false,inhabilitada:true ,},
+                            v3:{estado:'fuera_de_flujo_por_salto', siguiente:null, conDato:true , conProblema:true , pendiente:false,apagada:false,inhabilitada:true ,},
+                            v4:{estado:'actual'                  , siguiente:null, conDato:false, conProblema:false, pendiente:true ,apagada:false,inhabilitada:false,},
+                        },
+                        feedbackResumen:{estado:'fuera_de_flujo_por_salto', conDato:true, conProblema:true, pendiente:true},
+                        estados:{},
+                        siguientes:{},
+                        actual:'v4',
+                        primeraVacia:'v4',
+                        primeraFalla:'v3',
+                    } as FormStructureState<keyof SimpleRow, true>
                 )
             })
         })
@@ -969,12 +1010,25 @@ describe('row-validator setup', async function(){
             v1:{tipo:'texto', funcionHabilitar:'inexistente'},
         }
     }
-    it("calcula un registro vacío", async function(){
+    it("verifica la función habilitadora", async function(){
         try{
             await rowValidator(simpleRow, {v1:null});
             throw new Error('debia fallar');
         }catch(err){
             discrepances.showAndThrow(err,new Error('rowValidator error. No existe la funcion habilitadora inexistente'));
+        }
+    })
+    it("verifica la función valoradora", async function(){
+        var simpleRow:Structure<string>={
+            variables:{
+                v1:{tipo:'texto', funcionAutoIngresar:'inexistente'},
+            }
+        }
+        try{
+            await rowValidator(simpleRow, {v1:null},{autoIngreso:true});
+            throw new Error('debia fallar');
+        }catch(err){
+            discrepances.showAndThrow(err,new Error('rowValidator error. No existe la funcion valoradora inexistente'));
         }
     })
     it("tipo opciones sin opciones", async function(){
@@ -991,7 +1045,7 @@ describe('con filtros', function(){
     let estructura:Structure<string> = {
         variables:{
             nombre:  { tipo: 'texto' },
-            sexo:    { tipo: 'opciones', opciones:{1:{}, 2:{}}},
+            sexo:    { tipo: 'opciones', opciones:{1:{}, 2:{}/*, 3:{salto:'salario'}*/}},
             edad:    { tipo: 'numero' },
             filtro1: { tipo: 'filtro' , funcionHabilitar:'sexo == 2 and edad >= 14', salto:'salario'},
             hijos:   { tipo: 'numero' },
