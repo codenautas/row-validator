@@ -1,36 +1,34 @@
 "use strict";
 
-export type Valor = string | number | boolean | null
-
 export interface Opcion<V>{
     salto?:V|null         // Destino del salto para la opción seleccionada
 }
 
-export interface Variable<V, FH, FIN>{
+export type RowData<V extends string, D> = Record<V, D>
+
+export type FuncionHabilitar<V extends string, D> = (formData: RowData<V, D>) => boolean
+export type FuncionValoradora<V extends string, D> = (formData: RowData<V, D>) => D | null
+
+export interface Variable<V extends string, D, FIN>{
     optativa?:boolean     // Obligatoriedad el ingreso de la variable
     salto?:V|FIN|null     // Destino del salto en caso de saltos icondicionales
     tipo:'opciones'|'numerico'|'texto'|string
-    opciones?:{[k in string|number]:Opcion<V|FIN>}
+    opciones?:Record<string|number, Opcion<V|FIN>>
     maximo?:number|null   // Máximo valor válido
     minimo?:number|null   // Míximo valor válido
     // Para variables de especifique dependientes de una opción:
         subordinadaVar?:V|null           // variable de la que depende
-        subordinadaValor?:Valor|null     // valor que la activa
+        subordinadaValor?:D|null         // valor que la activa
     saltoNsNr?:V|FIN|null       // Salto en el caso de no respuesta o NS/NC
     calculada?:boolean|null     // Si la variable es calculada (no ingresada)
-    funcionHabilitar?:FH|null   // Determina la habilitación dinámica
+    funcionHabilitar?:FuncionHabilitar<V,D>|string|null   // Determina la habilitación dinámica
     libre?:boolean|null         // Posibilidad de ingresarla aunque esté salteada
-    funcionAutoIngresar?:FH|null // Determina un cálculo para el valor inicial de una variable que se muestra al ser actual
+    funcionAutoIngresar?:FuncionValoradora<V,D>|string|null // Determina un cálculo para el valor inicial de una variable que se muestra al ser actual
 }
 
-export interface Structure<V extends string, FIN = true, FH extends string = string>{
-    variables:{
-        [k in V]:Variable<V, FH, FIN>
-    }
+export interface Structure<V extends string, D, FIN = true>{
+    variables:Record<V, Variable<V, D, FIN>>
     marcaFin?:FIN
-}
-export type RowData<V extends string> = {
-    [k in V]: any
 }
 
 export type EstadoVariableNormales = 'actual'|'valida'|'todavia_no'|'calculada'|'salteada'|'optativa_sd'
@@ -47,22 +45,22 @@ export type Feedback<V extends string, FIN>={
     pendiente:boolean|null
 }
 
-export type FormStructureState<V extends string, FIN> = {
+export type FormStructureState<V extends string, D, FIN> = {
     resumen:'vacio'|'con problemas'|'incompleto'|'ok'
     feedbackResumen:Omit<Feedback<V,FIN>,'siguiente'|'apagada'|'inhabilitada'>
-    feedback:{[key in V]:Feedback<V,FIN>}
-    estados:{[key in V]?:EstadoVariable}
-    siguientes:{[key in V]?:V|FIN|null}
+    feedback:Record<V, Feedback<V,FIN>>
+    estados:Partial<Record<V, EstadoVariable>>
+    siguientes:Partial<Record<V, V|FIN|null>>
     actual:V|null
     primeraVacia?:V|null
     primeraFalla:V|null
-    autoIngresadas?:Partial<{[v in V]: any}>
+    autoIngresadas?:Partial<RowData<V,D>>
 };
 
-export interface RowValidatorSetup {
-    getFuncionHabilitar:(name:string)=>((formData:RowData<string>)=>boolean)
-    getFuncionValorar: (name: string) => ((formData: RowData<string>) => any | null)
-    nsnrTipicos:{[k:string]: any}
+export interface RowValidatorSetup<V extends string, D>{ // TODO PARAMETRIZR LOS TIPOS
+    getFuncionHabilitar: (name:string) => FuncionHabilitar<V, D>
+    getFuncionValorar: (name:string) => FuncionValoradora<V, D>
+    nsnrTipicos:Record<string, boolean>
     multiEstado:boolean|null
 }
 
@@ -70,8 +68,8 @@ export type OpcionesRowValidator={
     autoIngreso?: boolean
 }
 
-export function getRowValidator(_setup:Partial<RowValidatorSetup>){
-    var setup:RowValidatorSetup={
+export function getRowValidator<V extends string, D, FIN>(_setup:Partial<RowValidatorSetup<V, D>>){
+    var setup:RowValidatorSetup<V, D>={
         getFuncionHabilitar:(nombre:string)=>{
             throw new Error('rowValidator error. No existe la funcion habilitadora '+nombre);
         },
@@ -85,9 +83,15 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
         multiEstado:null,
         ..._setup
     };
-    return function rowValidator<V extends string, FIN>(estructura:Structure<V, FIN>, formData:RowData<V>, opts?:OpcionesRowValidator){
-        var rta:FormStructureState<V, FIN>={
-            feedback:{} as FormStructureState<V, FIN>['feedback'], 
+    return function rowValidator(estructura:Structure<V, D, FIN>, formData:RowData<V, D>, opts?:OpcionesRowValidator){
+        let getFuncionHabilitar = (nameOrFun: null | undefined | string | FuncionHabilitar<V,D>) => 
+            nameOrFun == null ? ()=>true :
+            nameOrFun instanceof Function ? nameOrFun : setup.getFuncionHabilitar(nameOrFun);
+        let getFuncionValorar = (nameOrFun: null | undefined | string | FuncionValoradora<V,D>) => 
+            nameOrFun == null ? ()=>null :
+            nameOrFun instanceof Function ? nameOrFun : setup.getFuncionValorar(nameOrFun);
+        var rta:FormStructureState<V, D, FIN>={
+            feedback:{} as FormStructureState<V, D, FIN>['feedback'], 
             feedbackResumen:{} as Feedback<V,FIN>, 
             estados:{}, 
             siguientes:{}, 
@@ -155,8 +159,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                     && formData[estructuraVar.subordinadaVar]!=estructuraVar.subordinadaValor 
                 || /* caso 2*/
                 estructuraVar.tipo != 'filtro' 
-                    && estructuraVar.funcionHabilitar 
-                    && !setup.getFuncionHabilitar!(estructuraVar.funcionHabilitar)(formData)
+                    && !getFuncionHabilitar(estructuraVar.funcionHabilitar)(formData)
             ){  // la variable está inhabilitada ya sea por:
                 //   1) está subordinada y no es el valor que la activa
                 //   2) la expresión habilitar falla
@@ -177,7 +180,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                             feedback.estado='todavia_no';
                         }else{
                             // hay que calcular si el filtro salta
-                            let habilitado = estructuraVar.funcionHabilitar != null && setup.getFuncionHabilitar!(estructuraVar.funcionHabilitar)(formData)
+                            let habilitado = getFuncionHabilitar(estructuraVar.funcionHabilitar)(formData)
                             if(habilitado){
                                 feedback.estado='valida';
                             }else{
@@ -190,8 +193,8 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                         if(!rta.primeraVacia){
                             rta.primeraVacia=miVariable;
                         }
-                        if(opts && opts.autoIngreso && estructuraVar.funcionAutoIngresar){
-                            let nuevoValor = setup.getFuncionValorar!(estructuraVar.funcionAutoIngresar)(formData);
+                        if(opts && opts.autoIngreso){
+                            let nuevoValor = getFuncionValorar(estructuraVar.funcionAutoIngresar)(formData);
                             if(nuevoValor != null){
                                 rta.autoIngresadas![miVariable] = nuevoValor;
                             }
@@ -215,7 +218,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                         libres++;
                     }
                     // hay algo ingresado hay que validarlo
-                    if(setup.nsnrTipicos[valor]){
+                    if(setup.nsnrTipicos[valor as unknown as string]){
                         feedback.estado='valida';
                         if(estructuraVar.saltoNsNr){
                             enSaltoAVariable=estructuraVar.saltoNsNr;
@@ -226,20 +229,22 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
                         if(estructuraVar.opciones==null){
                             throw new Error('rowValidator error. Variable "'+miVariable+'" sin opciones')
                         }
-                        if(estructuraVar.opciones[valor]){
+                        if(estructuraVar.opciones[valor as unknown as string]){
                             feedback.estado='valida'; 
                             feedback.pendiente=false;
-                            if(estructuraVar.opciones[valor].salto){
-                                enSaltoAVariable=estructuraVar.opciones[valor].salto;
+                            if(estructuraVar.opciones[valor as unknown as string].salto){
+                                enSaltoAVariable=estructuraVar.opciones[valor as unknown as string].salto;
                                 variableOrigenSalto = miVariable;
                             }
                         }else{
                             falla('invalida'); 
                         }
                     }else if(estructuraVar.tipo=='numerico'){
-                        valor=Number(valor);
-                        if(estructuraVar.maximo !=null && valor > estructuraVar.maximo
-                            || estructuraVar.minimo != null && valor < estructuraVar.minimo){
+                        var valorNumerico = Number(valor)
+                        // @ts-expect-error No hay manera (por ahora) de que sepa que este valor en particular es un número
+                        valor=valorNumerico
+                        if(estructuraVar.maximo !=null && valorNumerico > estructuraVar.maximo
+                            || estructuraVar.minimo != null && valorNumerico < estructuraVar.minimo){
                             falla('fuera_de_rango'); 
                         }else{
                             feedback.estado='valida'; 
@@ -276,9 +281,7 @@ export function getRowValidator(_setup:Partial<RowValidatorSetup>){
             }else{
                 feedback.siguiente=null;
             }
-            if(!feedback.inhabilitada && estructuraVar.funcionHabilitar 
-                && !setup.getFuncionHabilitar!(estructuraVar.funcionHabilitar)(formData)
-            ){
+            if(!feedback.inhabilitada && !getFuncionHabilitar!(estructuraVar.funcionHabilitar)(formData)){
                 feedback.inhabilitada=true;
             }
             rta.feedback[miVariable]=feedback;

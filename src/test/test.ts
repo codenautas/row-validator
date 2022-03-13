@@ -18,9 +18,9 @@ type DatedRow={v1:string|null, v2:number|null, v3:Date|null, v4:string|null}
 type RowConSubordinadas=SimpleRow & {v2_esp:string|null}
 type DesordenRow=SimpleRow & {v9:number|null, v11:number|null}
 
-function getRowValidatorSinMultiestado(opts?:any){
-    var rowValidatorInterno = getRowValidator({multiEstado:false, ...opts});
-    return <V extends string, FIN>(estructura: Structure<V, FIN, string>, formData: RowData<V>, opts?:OpcionesRowValidator):Omit<FormStructureState<V, FIN>,'feedback'|'feedbackResumen'> => {
+function getRowValidatorSinMultiestado<V extends string = string, D = any, FIN = true>(opts?:any){
+    var rowValidatorInterno = getRowValidator<V, D, FIN>({multiEstado:false, ...opts});
+    return (estructura: Structure<V, D, FIN>, formData: RowData<V, D>, opts?:OpcionesRowValidator):Omit<FormStructureState<V, D, FIN>,'feedback'|'feedbackResumen'> => {
         return rowValidatorInterno(estructura,formData,opts);
     }
    
@@ -28,7 +28,7 @@ function getRowValidatorSinMultiestado(opts?:any){
 
 describe('row-validator', function(){
     var rowValidator = getRowValidatorSinMultiestado()
-    var simpleStruct:Structure<keyof SimpleRow>={
+    var simpleStruct:Structure<keyof SimpleRow, string|number|null>={
         variables:{
             v1:{tipo:'texto'},
             v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}},
@@ -158,7 +158,7 @@ describe('row-validator', function(){
         )
     })
     it("sobre máximo 0", async function(){
-        var simpleStruct2:Structure<keyof SimpleRow>={
+        var simpleStruct2:Structure<keyof SimpleRow, string|number>={
             variables:{
                 v1:{tipo:'texto'},
                 v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}},
@@ -196,7 +196,7 @@ describe('row-validator', function(){
         )
     })
     it("optativa llena con salto", async function(){
-        var saltoIncondicionalStruct:Structure<keyof DesordenRow>={
+        var saltoIncondicionalStruct:Structure<keyof DesordenRow, string|number>={
             variables:{
                 v9:{tipo:'numerico'},
                 v1:{tipo:'texto'},
@@ -221,7 +221,7 @@ describe('row-validator', function(){
         )
     })
     describe("variables subordinadas", async function(){
-        var conSubordinadaStruct:Structure<keyof RowConSubordinadas>={
+        var conSubordinadaStruct:Structure<keyof RowConSubordinadas, string|number>={
             variables:{
                 v1:{tipo:'texto'},
                 v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}, 3:{}}},
@@ -275,7 +275,7 @@ describe('row-validator', function(){
         })
     })
     describe("variables subordinadas en pregunta con salto incondicional", async function(){
-        var conSubordinadaStruct:Structure<keyof RowConSubordinadas>={
+        var conSubordinadaStruct:Structure<keyof RowConSubordinadas, string|number>={
             variables:{
                 v1:{tipo:'texto'},
                 v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}, 3:{}}, salto:'v4'},
@@ -329,7 +329,7 @@ describe('row-validator', function(){
         })
     })
     describe("variables calculadas", async function(){
-        var calculadasInicialFinalStruct:Structure<keyof SimpleRow>={
+        var calculadasInicialFinalStruct:Structure<keyof SimpleRow, string|number>={
             variables:{
                 v1:{tipo:'texto', calculada:true},
                 v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}},
@@ -337,7 +337,7 @@ describe('row-validator', function(){
                 v4:{tipo:'texto', calculada:true}
             }
         }
-        var calculadasIntermedias:Structure<keyof DesordenRow>={
+        var calculadasIntermedias:Structure<keyof DesordenRow, string|number>={
             variables:{
                 v9:{tipo:'numerico'},
                 v1:{tipo:'texto', calculada:true},
@@ -395,15 +395,15 @@ describe('row-validator', function(){
             var getFuncionHabilitar=(nombre:string)=>{
                 switch(nombre){
                     case 'v1eq1':
-                        return (formData:RowData<string>)=>formData.v1==1;
+                        return (formData:RowData<string, string|number|null>)=>formData.v1==1;
                     default:
                         throw new Error('no encontrado')
                 }
             };
-            var rowValidator = getRowValidator({
+            var rowValidator = getRowValidator<string, string|number|null, true>({
                 getFuncionHabilitar,
             });
-            var simpleStruct:Structure<keyof SimpleRow>={
+            var simpleStruct:Structure<keyof SimpleRow, string|number|null>={
                 variables:{
                     v1:{tipo:'texto'},
                     v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}, funcionHabilitar:'v1eq1'},
@@ -546,13 +546,13 @@ describe('row-validator', function(){
                         actual:'v4',
                         primeraVacia:'v4',
                         primeraFalla:'v3',
-                    } as FormStructureState<keyof SimpleRow, true>
+                    } as FormStructureState<keyof SimpleRow, any, true>
                 )
             })
         })
     });
     describe("saltos al final", async function(){
-        var calculadasIntermedias:Structure<keyof DesordenRow, 'FIN'>={
+        var calculadasIntermedias:Structure<keyof DesordenRow, any, 'FIN'>={
             marcaFin:'FIN',
             variables:{
                 v9:{tipo:'numerico'},
@@ -562,6 +562,11 @@ describe('row-validator', function(){
                 v4:{tipo:'texto', calculada:true},
                 v11:{tipo:'numerico'},
             }
+        }
+        var rowValidator0 = getRowValidator<keyof DesordenRow, DesordenRow[keyof DesordenRow], 'FIN'>({});
+        var rowValidator = (estructura:Structure<keyof DesordenRow, DesordenRow[keyof DesordenRow], 'FIN'>, row:DesordenRow) => {
+            var {feedback, feedbackResumen, ...state} = rowValidator0(estructura, row);
+            return state;
         }
         it("desde opción va al final", async function(){
             var row:DesordenRow = {v9:1, v1:'A', v2:3, v3:null, v4:null, v11:null}
@@ -607,7 +612,7 @@ describe('row-validator', function(){
         })
     });
     describe("variables optativas", async function(){
-        var la1OptativaStruct:Structure<keyof SimpleRow>={
+        var la1OptativaStruct:Structure<keyof SimpleRow, string|number>={
             variables:{
                 v1:{tipo:'texto', optativa:true},
                 v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}},
@@ -615,7 +620,7 @@ describe('row-validator', function(){
                 v4:{tipo:'texto'}
             }
         }
-        var la3OptativaStruct:Structure<keyof DesordenRow>={
+        var la3OptativaStruct:Structure<keyof DesordenRow, string|number>={
             variables:{
                 v9:{tipo:'numerico'},
                 v1:{tipo:'texto'},
@@ -791,7 +796,7 @@ describe('row-validator', function(){
     })
     describe('libre', function(){
         var rowValidator = getRowValidatorSinMultiestado();
-        var simpleStruct:Structure<keyof SimpleRow>={
+        var simpleStruct:Structure<keyof SimpleRow, string|number>={
             variables:{
                 v1:{tipo:'texto'},
                 v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}},
@@ -921,7 +926,7 @@ describe('row-validator', function(){
     });
     describe('libre optativa', function(){
         var rowValidator = getRowValidatorSinMultiestado();
-        var simpleStruct:Structure<keyof SimpleRow>={
+        var simpleStruct:Structure<keyof SimpleRow, string|number>={
             variables:{
                 v1:{tipo:'texto'},
                 v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}},
@@ -947,7 +952,7 @@ describe('row-validator', function(){
     });
     describe('libre la primera', function(){
         var rowValidator = getRowValidatorSinMultiestado();
-        var simpleStruct:Structure<keyof SimpleRow>={
+        var simpleStruct:Structure<keyof SimpleRow, string|number>={
             variables:{
                 v1:{tipo:'texto', libre:true},
                 v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}}},
@@ -1005,7 +1010,7 @@ describe('row-validator', function(){
 
 describe('row-validator setup', async function(){
     var rowValidator = getRowValidator({multiEstado:false});
-    var simpleRow:Structure<string>={
+    var simpleRow:Structure<string, any, any>={
         variables:{
             v1:{tipo:'texto', funcionHabilitar:'inexistente'},
         }
@@ -1019,7 +1024,7 @@ describe('row-validator setup', async function(){
         }
     })
     it("verifica la función valoradora", async function(){
-        var simpleRow:Structure<string>={
+        var simpleRow:Structure<string, any>={
             variables:{
                 v1:{tipo:'texto', funcionAutoIngresar:'inexistente'},
             }
@@ -1042,17 +1047,17 @@ describe('row-validator setup', async function(){
 });
 
 describe('con filtros', function(){
-    let estructura:Structure<string> = {
+    let estructura:Structure<string, number|string, true> = {
         variables:{
             nombre:  { tipo: 'texto' },
             sexo:    { tipo: 'opciones', opciones:{1:{}, 2:{}/*, 3:{salto:'salario'}*/}},
             edad:    { tipo: 'numero' },
-            filtro1: { tipo: 'filtro' , funcionHabilitar:'sexo == 2 and edad >= 14', salto:'salario'},
+            filtro1: { tipo: 'filtro' , funcionHabilitar:(r:any) => r.sexo == 2 && r.edad >= 14, salto:'salario'},
             hijos:   { tipo: 'numero' },
             salario: { tipo: 'numero '}
         }
     }
-    let estructura2:Structure<string> = {
+    let estructura2:Structure<string, number|string, true> = {
         variables:{
             nombre:  { tipo: 'texto' },
             sexo:    { tipo: 'opciones', opciones:{1:{}, 2:{}}},
@@ -1185,12 +1190,13 @@ describe('con filtros', function(){
     })
 });
 
+let fCurrDateV2eq3 = (formData:RowData<string, number|string|bestGlobals.RealDate|boolean>) => formData.v2==3 ? bestGlobals.date.today() : null;
 
 describe('row-validator autoing', function(){
     var getFuncionValorar=(nombre:string)=>{
         switch(nombre){
             case 'v2=3,currDate':
-                return (formData:RowData<string>) => formData.v2==3 ? bestGlobals.date.today() : null;
+                return fCurrDateV2eq3
             default:
                 throw new Error('no encontrado')
         }
@@ -1198,7 +1204,7 @@ describe('row-validator autoing', function(){
     var rowValidator = getRowValidatorSinMultiestado({
         getFuncionValorar
     });
-    var simpleStruct:Structure<keyof SimpleRow>={
+    var simpleStruct:Structure<keyof SimpleRow, string|number|boolean|bestGlobals.RealDate, true>={
         variables:{
             v1:{tipo:'texto'},
             v2:{tipo:'opciones', opciones:{1:{salto:'v4'}, 2:{}, 3:{}}},
@@ -1268,6 +1274,7 @@ describe('row-validator autoing', function(){
     })
     it("con auto ingreso, está omitida", async function(){
         var row:DatedRow = {v1:'ok', v2:2, v3:null, v4:'pasada'}
+        simpleStruct.variables.v3.funcionAutoIngresar = fCurrDateV2eq3
         var state = await rowValidator(simpleStruct, row, {autoIngreso:true});
         discrepances.showAndThrow(
             state,
@@ -1284,6 +1291,48 @@ describe('row-validator autoing', function(){
         discrepances.showAndThrow(
             row,
             {v1:'ok', v2:2, v3:null, v4:'pasada'}
+        )
+    })
+    it("con auto ingreso en row vacia", async function(){
+        var row:DatedRow = {v1:null, v2:null, v3:null, v4:null}
+        simpleStruct.variables.v3.funcionAutoIngresar = fCurrDateV2eq3
+        var state = await rowValidator(simpleStruct, row, {autoIngreso:true});
+        discrepances.showAndThrow(
+            state,
+            {
+                resumen:'vacio',
+                estados:{v1:'actual', v2:'todavia_no', v3:'todavia_no', v4:'todavia_no'},
+                siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                actual:'v1',
+                primeraVacia:'v1',
+                primeraFalla:null,
+                autoIngresadas:{}
+            }
+        )
+        discrepances.showAndThrow(
+            row,
+            {v1:null, v2:null, v3:null, v4:null}
+        )
+    })
+    it("con auto ingreso con precondición per falta una anterior", async function(){
+        var row:DatedRow = {v1:null, v2:2, v3:null, v4:null}
+        simpleStruct.variables.v3.funcionAutoIngresar = fCurrDateV2eq3
+        var state = await rowValidator(simpleStruct, row, {autoIngreso:true});
+        discrepances.showAndThrow(
+            state,
+            {
+                resumen:'con problemas',
+                estados:{v1:'omitida', v2:'fuera_de_flujo_por_omitida', v3:'fuera_de_flujo_por_omitida', v4:'fuera_de_flujo_por_omitida'},
+                siguientes:{v1:'v2', v2:'v3', v3:'v4', v4:null},
+                actual:'v1',
+                primeraVacia:'v1',
+                primeraFalla:'v1',
+                autoIngresadas:{}
+            }
+        )
+        discrepances.showAndThrow(
+            row,
+            {v1:null, v2:2, v3:null, v4:null}
         )
     })
 });

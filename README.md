@@ -3,7 +3,7 @@ Validator de registros provenientes de formularios
 
 Especialmente diseñado para encuestas
 
-![extending](https://img.shields.io/badge/stability-extending-orange.svg)
+![stable](https://img.shields.io/badge/stability-stable-green.svg)
 [![npm-version](https://img.shields.io/npm/v/row-validator.svg)](https://npmjs.org/package/row-validator)
 [![downloads](https://img.shields.io/npm/dm/row-validator.svg)](https://npmjs.org/package/row-validator)
 [![build](https://github.com/codenautas/row-validator/actions/workflows/node.js.yml/badge.svg)](https://github.com/codenautas/row-validator/actions/workflows/node.js.yml)
